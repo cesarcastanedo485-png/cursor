@@ -1,0 +1,81 @@
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// Keys for secure storage.
+const String _keyApiKey = 'cursor_cloud_agents_api_key';
+const String _keyOnboardingDone = 'onboarding_done';
+const String _keyCapabilityPrefix = 'capability_config_';
+
+/// Encrypted storage for API key, onboarding state, and capability config.
+class SecureStorageService {
+  SecureStorageService() : _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+
+  final FlutterSecureStorage _storage;
+
+  Future<String?> getApiKey() => _storage.read(key: _keyApiKey);
+
+  Future<void> setApiKey(String value) => _storage.write(key: _keyApiKey, value: value);
+
+  Future<void> clearApiKey() => _storage.delete(key: _keyApiKey);
+
+  Future<bool> isOnboardingDone() async {
+    final v = await _storage.read(key: _keyOnboardingDone);
+    return v == 'true';
+  }
+
+  Future<void> setOnboardingDone(bool value) =>
+      _storage.write(key: _keyOnboardingDone, value: value.toString());
+
+  /// Capability config (API key, webhook URL, folder path) per capability id.
+  Future<CapabilityConfig?> getCapabilityConfig(String capabilityId) async {
+    final raw = await _storage.read(key: '$_keyCapabilityPrefix$capabilityId');
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      return CapabilityConfig.fromJson(m);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setCapabilityConfig(String capabilityId, CapabilityConfig config) async {
+    await _storage.write(
+      key: '$_keyCapabilityPrefix$capabilityId',
+      value: jsonEncode(config.toJson()),
+    );
+  }
+
+  Future<void> clearCapabilityConfig(String capabilityId) async {
+    await _storage.delete(key: '$_keyCapabilityPrefix$capabilityId');
+  }
+}
+
+/// Stored config for a capability (Tools tab).
+class CapabilityConfig {
+  const CapabilityConfig({
+    this.apiKey = '',
+    this.webhookUrl = '',
+    this.folderPath = '',
+  });
+
+  final String apiKey;
+  final String webhookUrl;
+  final String folderPath;
+
+  Map<String, dynamic> toJson() => {
+        'apiKey': apiKey,
+        'webhookUrl': webhookUrl,
+        'folderPath': folderPath,
+      };
+
+  static CapabilityConfig fromJson(Map<String, dynamic> j) => CapabilityConfig(
+        apiKey: j['apiKey'] as String? ?? '',
+        webhookUrl: j['webhookUrl'] as String? ?? '',
+        folderPath: j['folderPath'] as String? ?? '',
+      );
+
+  bool get isConfigured =>
+      apiKey.trim().isNotEmpty ||
+      webhookUrl.trim().isNotEmpty ||
+      folderPath.trim().isNotEmpty;
+}
