@@ -5,12 +5,15 @@ class ErrorView extends StatelessWidget {
   const ErrorView({
     super.key,
     required this.message,
+    this.title,
     this.onRetry,
     this.onSecondary,
     this.secondaryLabel,
   });
 
   final String message;
+  /// Optional title; if null, defaults to "Something went wrong".
+  final String? title;
   final VoidCallback? onRetry;
   final VoidCallback? onSecondary;
   final String? secondaryLabel;
@@ -29,7 +32,7 @@ class ErrorView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Something went wrong',
+            title ?? 'Something went wrong',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),

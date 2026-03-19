@@ -19,7 +19,7 @@ What was executed on your machine (approx. order):
 1. **Full 72B LLM** (doc target — long download):
 
    ```powershell
-   cd C:\Users\cmc\cursor_mobile
+   cd C:\Users\cmc\mordechaius-maximus
    .\scripts\complete_private_ai_setup.ps1
    ```
 
@@ -38,4 +38,4 @@ What was executed on your machine (approx. order):
 
 ## Script location
 
-`cursor_mobile\scripts\complete_private_ai_setup.ps1`
+`mordechaius-maximus\scripts\complete_private_ai_setup.ps1`

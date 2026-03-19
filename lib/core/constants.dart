@@ -8,6 +8,9 @@ const String apiBaseUrl = 'https://api.cursor.com';
 const String apiKeyHelpUrl =
     'https://cursor.com/dashboard?tab=cloud-agents';
 
+/// Where users connect GitHub so repos appear in the app (Cloud Agents onboarding).
+const String cursorConnectGithubUrl = 'https://cursor.com/onboard';
+
 /// Route names for navigation.
 abstract class AppRoutes {
   static const String onboarding = '/onboarding';

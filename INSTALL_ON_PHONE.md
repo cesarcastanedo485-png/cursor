@@ -14,7 +14,7 @@ Use this flow to build the APK, upload it to Google Drive, then download and ins
 From your project folder:
 
 ```powershell
-cd C:\Users\cmc\cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
 .\scripts\copy_apk_for_phone.ps1 -Build
 ```
 
@@ -50,7 +50,7 @@ This builds the release APK and copies it to:
 When you change the app and want a fresh APK in Drive:
 
 ```powershell
-cd C:\Users\cmc\cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
 flutter build apk --release
 .\scripts\copy_apk_for_phone.ps1
 ```

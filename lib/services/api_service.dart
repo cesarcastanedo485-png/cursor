@@ -29,7 +29,7 @@ class ApiService {
   late final Dio _dio;
 
   void setApiKey(String key) {
-    _apiKey = key;
+    _apiKey = key.trim();
     _addAuth();
   }
 
@@ -44,8 +44,12 @@ class ApiService {
   }
 
   /// GET /v0/repositories — linked GitHub repos (Cursor Cloud).
+  /// Cursor docs: strict rate limit (1/min, 30/hr), can take tens of seconds.
   Future<List<CursorRepository>> getRepositories() async {
-    final r = await _dio.get<dynamic>('/v0/repositories');
+    final r = await _dio.get<dynamic>(
+      '/v0/repositories',
+      options: Options(receiveTimeout: const Duration(seconds: 90)),
+    );
     final data = r.data;
     if (data == null) return [];
     List<dynamic> list;
@@ -135,7 +139,12 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final credentials = '$apiKey:';
+    final key = apiKey.trim();
+    if (key.isEmpty) {
+      handler.next(options);
+      return;
+    }
+    final credentials = '$key:';
     final encoded = base64Encode(utf8.encode(credentials));
     options.headers['Authorization'] = 'Basic $encoded';
     handler.next(options);

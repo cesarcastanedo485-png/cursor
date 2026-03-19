@@ -16,7 +16,7 @@
      ```
    - Then:
      ```powershell
-     cd C:\Users\cmc\cursor_mobile
+     cd C:\Users\cmc\mordechaius-maximus
      flutter pub get
      flutter run
      ```
@@ -36,8 +36,8 @@ Click **“Download Android Studio”**, accept the terms, and save the `.exe` t
 In the project folder run once:
 
 ```powershell
-cd C:\Users\cmc\cursor_mobile
-flutter create . --project-name cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
+flutter create . --project-name mordechaius_maximus
 flutter pub get
 flutter run
 ```
@@ -55,7 +55,7 @@ flutter run
 - After `flutter build apk --release`, run:
 
   ```powershell
-  cd C:\Users\cmc\cursor_mobile
+  cd C:\Users\cmc\mordechaius-maximus
   .\scripts\copy_apk_for_phone.ps1
   ```
 

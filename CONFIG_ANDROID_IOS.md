@@ -1,6 +1,6 @@
 # Android / iOS configuration notes
 
-After running `flutter create . --project-name cursor_mobile`, you may need to adjust the following.
+After running `flutter create . --project-name mordechaius_maximus`, you may need to adjust the following.
 
 ## Android
 

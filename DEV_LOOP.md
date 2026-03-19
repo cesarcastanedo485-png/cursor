@@ -11,7 +11,7 @@
 
 **Option B — Command line**  
 ```powershell
-cd C:\Users\cmc\cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
 C:\Users\cmc\flutter\bin\flutter.bat emulators --launch Medium_Phone_API_36
 ```
 If that fails with a generic error, use Option A and cold boot the AVD (**▼ → Cold Boot Now**).
@@ -19,7 +19,7 @@ If that fails with a generic error, use Option A and cold boot the AVD (**▼ �
 ### Run the app with hot reload
 
 ```powershell
-cd C:\Users\cmc\cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
 C:\Users\cmc\flutter\bin\flutter.bat devices
 # You should see something like: sdk gphone64 ... • emulator-5554 • android-arm64
 C:\Users\cmc\flutter\bin\flutter.bat run
@@ -45,7 +45,7 @@ C:\Users\cmc\flutter\bin\flutter.bat run
 ### One-shot script (after emulator is already running)
 
 ```powershell
-cd C:\Users\cmc\cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
 .\scripts\run_on_emulator.ps1
 ```
 
@@ -63,7 +63,7 @@ cd C:\Users\cmc\cursor_mobile
 ## 3. Release APK for Google Drive (not for daily dev)
 
 ```powershell
-cd C:\Users\cmc\cursor_mobile
+cd C:\Users\cmc\mordechaius-maximus
 .\scripts\copy_apk_for_phone.ps1 -Build
 ```
 

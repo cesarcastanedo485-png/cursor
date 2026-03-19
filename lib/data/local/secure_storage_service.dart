@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 const String _keyApiKey = 'cursor_cloud_agents_api_key';
 const String _keyOnboardingDone = 'onboarding_done';
 const String _keyCapabilityPrefix = 'capability_config_';
+const String _keyManualRepoUrls = 'manual_repo_urls';
 
 /// Encrypted storage for API key, onboarding state, and capability config.
 class SecureStorageService {
@@ -47,6 +48,22 @@ class SecureStorageService {
 
   Future<void> clearCapabilityConfig(String capabilityId) async {
     await _storage.delete(key: '$_keyCapabilityPrefix$capabilityId');
+  }
+
+  /// Manual repo URLs when Cursor API /v0/repositories returns 401 (workaround).
+  Future<List<String>> getManualRepoUrls() async {
+    final raw = await _storage.read(key: _keyManualRepoUrls);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> setManualRepoUrls(List<String> urls) async {
+    await _storage.write(key: _keyManualRepoUrls, value: jsonEncode(urls));
   }
 }
 

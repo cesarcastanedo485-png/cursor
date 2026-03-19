@@ -33,11 +33,16 @@ class CursorRepository {
     if (u is String) {
       parsed = DateTime.tryParse(u);
     }
+    final owner = j['owner'] as String?;
+    final name = (j['name'] ?? j['repo'] ?? fullNameFrom(j) ?? 'repo').toString();
+    final fullName = j['full_name'] as String? ?? j['fullName'] as String? ?? (owner != null ? '$owner/$name' : null);
+    final repoUrlRaw = j['repository'] as String?;
+    final htmlUrl = j['html_url'] as String? ?? j['htmlUrl'] as String? ?? j['url'] as String? ?? repoUrlRaw;
     return CursorRepository(
-      name: (j['name'] ?? j['repo'] ?? j['repository'] ?? fullNameFrom(j) ?? 'repo').toString(),
-      fullName: j['full_name'] as String? ?? j['fullName'] as String?,
+      name: name,
+      fullName: fullName,
       description: j['description'] as String?,
-      htmlUrl: j['html_url'] as String? ?? j['htmlUrl'] as String? ?? j['url'] as String?,
+      htmlUrl: htmlUrl,
       cloneUrl: j['clone_url'] as String? ?? j['cloneUrl'] as String?,
       updatedAt: parsed,
     );
@@ -45,6 +50,35 @@ class CursorRepository {
 
   static String? fullNameFrom(Map<String, dynamic> j) {
     final n = j['full_name'] ?? j['fullName'];
-    return n?.toString();
+    if (n != null) return n.toString();
+    final owner = j['owner'] as String?;
+    final name = j['name'] as String?;
+    if (owner != null && name != null) return '$owner/$name';
+    return null;
+  }
+
+  /// Build from a GitHub URL (e.g. https://github.com/owner/repo) for manual-add workaround.
+  static CursorRepository? fromUrl(String url) {
+    final s = url.trim();
+    if (s.isEmpty) return null;
+    String normalized = s;
+    if (!normalized.startsWith('http')) normalized = 'https://github.com/$s';
+    if (!normalized.contains('github.com')) return null;
+    try {
+      final uri = Uri.parse(normalized);
+      final path = uri.pathSegments.where((e) => e.isNotEmpty).toList();
+      if (path.length < 2) return null;
+      final owner = path[0];
+      final name = path[1].replaceAll(RegExp(r'\.git$'), '');
+      final fullName = '$owner/$name';
+      final htmlUrl = 'https://github.com/$fullName';
+      return CursorRepository(
+        name: name,
+        fullName: fullName,
+        htmlUrl: htmlUrl,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 }

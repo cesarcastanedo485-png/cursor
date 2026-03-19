@@ -13,7 +13,7 @@ Flutter app (Android & iOS) for **Cursor Pro Cloud Agents** (tab: **Cloud Agents
 ## Run
 
 ```bash
-cd cursor_mobile
+cd mordechaius-maximus
 flutter pub get
 flutter run
 ```

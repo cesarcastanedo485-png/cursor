@@ -13,7 +13,7 @@ Flutter app (Android/iOS): **Cloud Agents** (Cursor API), **My Private AIs** (Op
 ## Folder Structure
 
 ```
-cursor_mobile/
+mordechaius-maximus/
 ├── lib/
 │   ├── main.dart                    # App entry, MaterialApp, theme, routing
 │   ├── app.dart                     # Root widget, bottom nav shell, onboarding gate

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/backend_mode_provider.dart';
+import '../../../providers/repositories_provider.dart';
 import '../../../providers/preferences_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/connectivity_diagnostics.dart';
@@ -60,6 +61,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
     final err = await ref.read(apiKeyProvider.notifier).testConnection();
     if (!mounted) return;
+    if (err == null) {
+      ref.invalidate(repositoriesProvider);
+    }
     setState(() {
       _testing = false;
       _testResult = err == null ? 'Connection successful!' : err;
@@ -76,17 +80,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _openCursorConnectGithub() async {
+    final uri = Uri.parse(cursorConnectGithubUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _showConnectGithub() {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Connect GitHub'),
+        title: const Text('Why don\'t I see my repos?'),
         content: const SingleChildScrollView(
           child: Text(
-            'If your local projects aren\'t showing up in My Repos, just push them to GitHub once — '
-            'Cursor will guide you with commands — so they appear here forever.\n\n'
-            'Repositories come from Cursor Cloud (linked GitHub account). '
-            'Ensure GitHub is connected in Cursor and repos are pushed to github.com.',
+            'Repos in this app come from Cursor, not directly from GitHub. '
+            'You must connect your GitHub account to Cursor first.\n\n'
+            '1. Open the link below (on your computer is easiest).\n'
+            '2. Sign in to Cursor and connect your GitHub account.\n'
+            '3. Come back here and pull to refresh in My Repos.\n\n'
+            'Your GitHub repos only show up after that connection is done.',
           ),
         ),
         actions: [
@@ -94,9 +107,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _openGithubDashboard();
+              _openCursorConnectGithub();
             },
-            child: const Text('GitHub settings'),
+            child: const Text('Connect GitHub in Cursor'),
           ),
         ],
       ),
@@ -277,7 +290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 24),
                 Center(
                   child: Text(
-                    'Mordechaius Maximus v2.0.1',
+                    'Mordechaius Maximus v2.0.2',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
