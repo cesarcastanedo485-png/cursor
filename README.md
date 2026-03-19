@@ -1,5 +1,14 @@
 # Mordechaius Maximus
 
+Flutter app (Android & iOS) for **Cursor Pro Cloud Agents**
+
+## GitHub (optional for the APK, useful for Cursor & backup)
+
+The app **does not require** a GitHub repo to install or run.  
+To host this project on GitHub under `cesarcastanedo485-png/mordechaius-maximus`, follow **[GITHUB_SETUP_NOW.md](GITHUB_SETUP_NOW.md)** (create the empty repo on GitHub, then `git push -u origin main`). `origin` is already configured locally.
+
+---
+
 Flutter app (Android & iOS) for **Cursor Pro Cloud Agents** (tab: **Cloud Agents**), **My Private AIs** (local Ollama / ComfyUI), and **Capabilities** (automation tools + instruction manual).
 
 **Architecture:** **Cloud Agents** mode uses `api.cursor.com` (Dio + Basic Auth). **Private** mode uses OpenAI-compatible `LocalOpenAiService`. Top **Active AI** banner shows which backend is active. Private chats use **Hive** (`mm_private_chat`) with cross-AI memory excerpts. **flutter_tts**, **image_picker**, **video_player** on per-AI chat.
