@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants.dart';
 import '../../../data/models/launch_request.dart';
@@ -30,6 +31,18 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   String? _launchedAgentId;
   String? _appliedPrefill;
 
+  String _formatLaunchError(Object e) {
+    if (e is DioException) {
+      final code = e.response?.statusCode;
+      final data = e.response?.data;
+      final body = data == null
+          ? (e.message ?? 'No response body')
+          : (data is String ? data : jsonEncode(data));
+      return 'Cursor launch failed (HTTP $code).\n$body';
+    }
+    return e.toString();
+  }
+
   static const _models = ['default', 'claude-4-sonnet', 'claude-4-opus', 'gpt-4o'];
 
   @override
@@ -56,11 +69,32 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     return base64Encode(bytes);
   }
 
+  String? _normalizeRepoUrl(String raw) {
+    final input = raw.trim();
+    if (input.isEmpty) return null;
+    final withScheme = input.startsWith('http://') || input.startsWith('https://')
+        ? input
+        : 'https://github.com/$input';
+    final uri = Uri.tryParse(withScheme);
+    if (uri == null || uri.host.isEmpty) return null;
+
+    // Accept owner/repo only from github.com URLs.
+    final isGithub = uri.host.toLowerCase().contains('github.com');
+    if (!isGithub) return null;
+
+    final segs = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+    if (segs.length < 2) return null;
+    final owner = segs[0];
+    final repo = segs[1].replaceAll(RegExp(r'\.git$'), '');
+    if (owner.isEmpty || repo.isEmpty) return null;
+    return 'https://github.com/$owner/$repo';
+  }
+
   Future<void> _launch() async {
-    final repo = _repoController.text.trim();
+    final repo = _normalizeRepoUrl(_repoController.text);
     final prompt = _promptController.text.trim();
-    if (repo.isEmpty) {
-      setState(() => _launchError = 'Enter a repository URL');
+    if (repo == null) {
+      setState(() => _launchError = 'Enter a valid GitHub repo URL (owner/repo or https://github.com/owner/repo)');
       return;
     }
     if (prompt.isEmpty) {
@@ -71,6 +105,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
       _launching = true;
       _launchError = null;
       _launchedAgentId = null;
+      _repoController.text = repo;
     });
     final branch = _branchController.text.trim();
     final imageB64 = await _imageToBase64();
@@ -97,7 +132,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
       if (!mounted) return;
       setState(() {
         _launching = false;
-        _launchError = e.toString();
+        _launchError = _formatLaunchError(e);
       });
     }
   }
@@ -206,7 +241,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             Text('Model', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _model,
+              initialValue: _model,
               decoration: const InputDecoration(),
               items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
               onChanged: (v) => setState(() => _model = v ?? 'default'),

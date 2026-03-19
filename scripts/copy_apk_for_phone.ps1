@@ -18,7 +18,8 @@
 #>
 param(
     [switch]$Build,
-    [string]$Destination = ""
+    [string]$Destination = "",
+    [switch]$KeepLegacyNames
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,6 +63,24 @@ if ([string]::IsNullOrWhiteSpace($Destination)) {
 
 Copy-Item -Path $ApkSource -Destination $Destination -Force
 $sizeMb = [math]::Round((Get-Item $Destination).Length / 1MB, 2)
+
+# Keep one canonical install file on Desktop by default.
+# This avoids confusion when older branding/file names are still present.
+if (-not $KeepLegacyNames) {
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    $legacyNames = @(
+        "CursorMobile-install.apk",
+        "cursor-mobile-install.apk",
+        "cursor_install.apk",
+        "cursor install apk.apk"
+    )
+    foreach ($n in $legacyNames) {
+        $p = Join-Path $desktop $n
+        if ((Test-Path $p) -and ((Resolve-Path $p).Path -ne (Resolve-Path $Destination).Path)) {
+            Remove-Item $p -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
 
 Write-Host ""
 Write-Host "Copied installable APK to:" -ForegroundColor Green

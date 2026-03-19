@@ -19,15 +19,45 @@ class LaunchRequest {
   final String? imageBase64; // optional image attachment (base64)
 
   Map<String, dynamic> toJson() {
+    // Cursor Cloud Agents API expects a nested request body.
+    // Docs schema (high level):
+    // {
+    //   "prompt": { "text": "..." },
+    //   "model": "default" | "...",
+    //   "source": { "repository": "...", "ref": "..." },
+    //   "target": { "autoCreatePr": true, "branchName": "..." }
+    // }
+    //
+    // We intentionally omit image payloads for now because the API requires
+    // per-image dimensions ("dimension": {width,height}) and this app doesn't
+    // currently compute them during launch.
+    final sourceRef = (ref != null && ref!.isNotEmpty) ? ref : null;
+
     final map = <String, dynamic>{
-      'repo_url': repoUrl,
-      'prompt': prompt,
-      'auto_create_pr': autoCreatePr,
+      'prompt': <String, dynamic>{
+        'text': prompt,
+      },
+      'source': <String, dynamic>{
+        'repository': repoUrl,
+        if (sourceRef != null) 'ref': sourceRef,
+      },
     };
-    if (ref != null && ref!.isNotEmpty) map['ref'] = ref;
-    if (branchName != null && branchName!.isNotEmpty) map['branch_name'] = branchName;
-    if (model != null && model!.isNotEmpty) map['model'] = model;
-    if (imageBase64 != null && imageBase64!.isNotEmpty) map['image'] = imageBase64;
+
+    // Only include `target` when it has meaning. Cursor's API treats `target`
+    // as optional; sending `autoCreatePr: false` may be rejected in some cases.
+    final wantsTarget = autoCreatePr || (branchName != null && branchName!.isNotEmpty);
+    if (wantsTarget) {
+      map['target'] = <String, dynamic>{
+        'autoCreatePr': autoCreatePr,
+        if (branchName != null && branchName!.isNotEmpty) 'branchName': branchName,
+      };
+    }
+
+    final chosenModel = (model ?? '').trim();
+    if (chosenModel.isNotEmpty && chosenModel != 'default') {
+      map['model'] = chosenModel;
+    }
+
     return map;
   }
 }
