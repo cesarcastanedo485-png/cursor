@@ -13,8 +13,8 @@ You **do** want GitHub if you want:
 
 - Git is initialized on branch **`main`**.  
 - **`origin`** is set to:  
-  `https://github.com/cesarcastanedo485-png/mordechaius-maximus.git`  
-- The remote repo **does not exist yet** — create it, then push once.
+  `https://github.com/cesarcastanedo485-png/cursor.git`  
+- After you create that repo on GitHub, run `git push -u origin main` once (already done if push succeeded).
 
 ---
 
@@ -23,7 +23,7 @@ You **do** want GitHub if you want:
 1. Open **https://github.com/new** while logged in as **cesarcastanedo485-png**.
 
 2. Set:
-   - **Repository name:** `mordechaius-maximus`  
+   - **Repository name:** `cursor`  
    - **Private** (recommended)  
    - **Do not** add README, .gitignore, or license (this repo already has them).
 
@@ -44,7 +44,7 @@ If Git asks for credentials, use a **GitHub Personal Access Token** (with `repo`
 
 Your app code will live at:
 
-**https://github.com/cesarcastanedo485-png/mordechaius-maximus**
+**https://github.com/cesarcastanedo485-png/cursor**
 
 Future updates:
 

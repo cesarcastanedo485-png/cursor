@@ -5,7 +5,7 @@ Flutter app (Android & iOS) for **Cursor Pro Cloud Agents**
 ## GitHub (optional for the APK, useful for Cursor & backup)
 
 The app **does not require** a GitHub repo to install or run.  
-To host this project on GitHub under `cesarcastanedo485-png/mordechaius-maximus`, follow **[GITHUB_SETUP_NOW.md](GITHUB_SETUP_NOW.md)** (create the empty repo on GitHub, then `git push -u origin main`). `origin` is already configured locally.
+Remote **`origin`:** `https://github.com/cesarcastanedo485-png/cursor` — see **[GITHUB_SETUP_NOW.md](GITHUB_SETUP_NOW.md)** for setup notes.
 
 ---
 
