@@ -170,13 +170,11 @@ def _validate_folder_context(folder: dict, auth_mode: str, shared_drive_id: str)
 
     impersonated_user = _env("GDRIVE_IMPERSONATED_USER")
     if auth_mode == "service_account" and not folder_drive_id and not impersonated_user:
-        _fail(
-            "Service account target folder is in My Drive (not Shared Drive), but no impersonated user is configured.\n"
-            "Service accounts do not have their own consumer storage quota.\n"
-            "Use one of:\n"
-            "1) Shared Drive: add service account as member and set GDRIVE_SHARED_DRIVE_ID.\n"
-            "2) OAuth user credentials (refresh token).\n"
-            "3) Domain-wide delegation: set GDRIVE_IMPERSONATED_USER for a Workspace user."
+        print(
+            "Warning: service account is targeting a My Drive folder without GDRIVE_IMPERSONATED_USER.\n"
+            "This can work only if that folder is explicitly shared with the service-account identity.\n"
+            "If upload fails, use Shared Drive + GDRIVE_SHARED_DRIVE_ID, OAuth user credentials, "
+            "or set GDRIVE_IMPERSONATED_USER for Workspace domain delegation."
         )
 
 
