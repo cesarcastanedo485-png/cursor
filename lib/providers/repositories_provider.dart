@@ -31,7 +31,9 @@ class CursorReposNotifier extends AsyncNotifier<List<CursorRepository>> {
   }
 
   Future<List<CursorRepository>> _load({required bool force}) async {
-    final key = await ref.read(apiBootstrapProvider.future);
+    await ref.read(apiBootstrapProvider.future);
+    final stored = await ref.read(secureStorageProvider).getApiKey();
+    final key = stored?.trim();
     if (key == null || key.isEmpty) {
       ref.read(reposAntiLoopMessageProvider.notifier).state = null;
       throw Exception('Add your Cursor API key in Settings to load repositories.');
