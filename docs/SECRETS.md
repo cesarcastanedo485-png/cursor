@@ -27,28 +27,15 @@ Stored on-device with **flutter_secure_storage**. It is never written to the rep
 - [ ] Revoke and re-issue any leaked SMTP or cloud tokens
 - [ ] Re-scan repo: `git grep -i password` / secret scanning before pushing
 
-## Google Drive upload auth (GitHub Actions)
+## GitHub APK publishing auth (GitHub Actions)
 
-The APK upload workflow supports two paths:
+The APK workflow (`.github/workflows/apk_to_github.yml`) uses the built-in
+`GITHUB_TOKEN` to upload artifacts and publish/update the `latest-apk` release.
+No extra GitHub personal token secret is required.
 
-1. **Service account + Shared Drive** (recommended for service accounts)
-   - Set `GDRIVE_SERVICE_ACCOUNT_JSON`, `GDRIVE_FOLDER_ID`, and `GDRIVE_SHARED_DRIVE_ID`.
-   - Add the service-account email as a member of the Shared Drive (Editor or better).
-   - Use a folder that belongs to that Shared Drive.
+For release signing, continue configuring:
 
-2. **OAuth user credentials** (real user storage quota)
-   - Set `GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`, and `GDRIVE_FOLDER_ID`.
-   - Use a folder accessible by that user account.
-
-Optional for Workspace admins:
-
-- **Domain-wide delegation impersonation** with service account:
-  set `GDRIVE_IMPERSONATED_USER` (user email) and ensure domain-wide delegation is configured in Google Workspace.
-
-Important: there is no separate paid "service account storage" quota. Shared Drive capacity comes from Workspace storage plans.
-
-Official docs:
-
-- Shared Drives + Drive API: https://developers.google.com/workspace/drive/api/guides/enable-shareddrives
-- OAuth 2.0 for Google APIs: https://developers.google.com/identity/protocols/oauth2
-- Domain-wide delegation: https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`

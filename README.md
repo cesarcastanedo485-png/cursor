@@ -2,7 +2,7 @@
 
 Flutter app (Android & iOS) for **Cursor Pro Cloud Agents**
 
-## GitHub (optional for the APK, useful for Cursor & backup)
+## GitHub (recommended for APK distribution, useful for Cursor & backup)
 
 The app **does not require** a GitHub repo to install or run.  
 Remote **`origin`:** `https://github.com/cesarcastanedo485-png/cursor` — see **[GITHUB_SETUP_NOW.md](GITHUB_SETUP_NOW.md)** for setup notes.
@@ -18,6 +18,23 @@ Quick mobile flow:
 1. Push your changes.
 2. Open your repo on GitHub → **Actions** → **Source ZIP on Push**.
 3. Open the latest run and download the artifact named like `source-<branch>-<sha>`.
+
+---
+
+### Automatic APK builds on `main` / `master`
+
+This repo includes **`.github/workflows/apk_to_github.yml`**.
+
+- Builds a signed (or fallback debug-signed) release APK.
+- Uploads an Actions artifact named `apk-<sha>`.
+- Publishes/updates a prerelease named **Latest APK** with tag `latest-apk`.
+
+Phone install flow:
+
+1. Open your repo on GitHub.
+2. Go to **Releases**.
+3. Open **Latest APK** and download the `MordechaiusMaximus-*.apk` asset.
+4. Install from Files/Downloads on Android (allow unknown source if prompted).
 
 ---
 
@@ -50,17 +67,17 @@ flutter run
 
 **Faster dev loop (emulator or USB):** start an AVD in **Android Studio → Device Manager**, then `flutter run` — use **hot reload** (`r`). See **[DEV_LOOP.md](DEV_LOOP.md)** and `.\scripts\run_on_emulator.ps1`.
 
-## Release APK & install on phone (Google Drive)
+## Release APK & install on phone (GitHub Release)
 
-To build the APK and get it on your phone via Google Drive:
+To build and publish the APK from CI:
 
 ```powershell
-.\scripts\copy_apk_for_phone.ps1 -Build
+git push origin main
 ```
 
-This builds the release APK and copies **`MordechaiusMaximus-install.apk`** to your **Desktop**. Upload that file to Google Drive, then on your phone: open Drive → find the file → ⋮ → Download → open from Files/Downloads → Install.
+Then open **GitHub → Releases → Latest APK** and download the asset on your phone.
 
-**Full steps:** **[INSTALL_ON_PHONE.md](INSTALL_ON_PHONE.md)** — use the **`.apk`** file only (not `.code-workspace`).
+**Full steps:** **[INSTALL_ON_PHONE.md](INSTALL_ON_PHONE.md)**.
 
 Manual build and copy:
 
@@ -69,7 +86,7 @@ flutter build apk --release
 .\scripts\copy_apk_for_phone.ps1
 ```
 
-Output APK: **`build/app/outputs/flutter-apk/app-release.apk`** → copied to **`Desktop\MordechaiusMaximus-install.apk`**.
+Output APK: **`build/app/outputs/flutter-apk/app-release.apk`**.
 
 ## Tabs
 

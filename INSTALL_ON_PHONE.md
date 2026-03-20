@@ -1,58 +1,49 @@
-# Install Mordechaius Maximus on Your Phone (via Google Drive)
+# Install Mordechaius Maximus on Your Phone (via GitHub Releases)
 
-Use this flow to build the APK, upload it to Google Drive, then download and install it on your Android phone.
+Use this flow to build the APK in GitHub Actions, then download and install it on your Android phone.
 
 **v2.0.1+** adds **Connection check** on onboarding and Settings (open `api.cursor.com` in browser + DNS/HTTPS from the app) and fixes **release builds missing `INTERNET` permission** (could cause “Failed host lookup” only in the installed APK).
 
 ---
 
-## 1. Build and prepare the APK on your PC
-
-**Use this file:** **`MordechaiusMaximus-install.apk`** (or `app-release.apk`)  
-**Do not use:** `.code-workspace` or any other file — those are not the app.
+## 1. Push changes so GitHub builds the APK
 
 From your project folder:
 
 ```powershell
 cd C:\Users\cmc\mordechaius-maximus
-.\scripts\copy_apk_for_phone.ps1 -Build
+git push origin main
 ```
 
-This builds the release APK and copies it to:
-
-**`Desktop\MordechaiusMaximus-install.apk`**
-
-(If the APK already exists, you can run without `-Build` to only copy.)
+GitHub workflow: **`.github/workflows/apk_to_github.yml`**  
+It builds the APK and updates the prerelease **Latest APK** (`latest-apk`).
 
 ---
 
-## 2. Upload to Google Drive (on your PC)
+## 2. Download the APK from GitHub on your phone
 
-1. Open [Google Drive](https://drive.google.com) in your browser (same account you use on your phone).
-2. Upload **`Desktop\MordechaiusMaximus-install.apk`** (drag and drop or **New → File upload**).
-3. Keep the file there so you can redownload it anytime on your phone.
+1. Open your repo on GitHub in mobile browser.
+2. Go to **Releases**.
+3. Open **Latest APK**.
+4. Download the `MordechaiusMaximus-*.apk` asset.
 
 ---
 
-## 3. Download and install on your Android phone
+## 3. Install on your Android phone
 
-1. Open the **Google Drive** app (or drive.google.com in Chrome).
-2. Find **MordechaiusMaximus-install.apk**.
-3. Tap the **⋮** (three dots) next to it → **Download** (or **Make available offline**).
-4. Open **Files** or **Downloads** and tap **MordechaiusMaximus-install.apk**.
+1. Open **Files** or **Downloads** and tap the downloaded APK.
 5. Tap **Install**. If prompted, allow installation from this source.
-6. If your phone blocks the install: **Settings → Apps → Special app access** (or **Install unknown apps**) → allow **Files** or **Chrome** or **Google Drive** to install apps.
+6. If your phone blocks the install: **Settings → Apps → Special app access** (or **Install unknown apps**) → allow **Files** or **Chrome** to install apps.
 
 ---
 
 ## Rebuild and update (new versions)
 
-When you change the app and want a fresh APK in Drive:
+When you change the app and want a fresh APK:
 
 ```powershell
 cd C:\Users\cmc\mordechaius-maximus
-flutter build apk --release
-.\scripts\copy_apk_for_phone.ps1
+git push origin main
 ```
 
-Then upload the new **`Desktop\MordechaiusMaximus-install.apk`** to Google Drive (replace the old one or use a new name). On your phone, download the new APK and install again.
+Then open **Releases → Latest APK**, download the newest asset, and install again.

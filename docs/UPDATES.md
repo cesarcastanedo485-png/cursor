@@ -4,7 +4,7 @@
 
 Use **Play App Signing** and standard in-app or Play-driven updates. No custom Drive flow required.
 
-## Option B — Side-loaded APK (this project)
+## Option B — Side-loaded APK via GitHub (this project)
 
 Documented, tested path:
 
@@ -12,7 +12,9 @@ Documented, tested path:
    ```powershell
    flutter build apk --release
    ```
-2. Distribute the file from `build/app/outputs/flutter-apk/app-release.apk` (or use `scripts/copy_apk_for_phone.ps1`).
+2. Push to `main`/`master` so CI builds and publishes APK:
+   - Workflow: `.github/workflows/apk_to_github.yml`
+   - Download from GitHub **Releases → Latest APK**
 3. In the app, **Capabilities → Check for updates** (`drive_download`):
    - **Configure** → set **Folder path** to a **direct download URL** for the APK (e.g. Google Drive `uc?export=download&id=...`).
    - **Test** checks reachability; **Execute** downloads to a temp file and opens the installer (`open_file`).
@@ -20,7 +22,7 @@ Documented, tested path:
 ### Limitations
 
 - User may need to allow **install from unknown sources**.
-- Google Drive links must be **direct** download URLs; virus-scan interstitials can break automated downloads.
+- If you still use Google Drive for in-app update links, links must be **direct** download URLs; virus-scan interstitials can break automated downloads.
 - This path is **best-effort**; verify on a real device after each release.
 
 ## Option C — Trigger desktop upload from the phone
