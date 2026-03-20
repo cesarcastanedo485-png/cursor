@@ -34,14 +34,19 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -n "${ANDROID_KEYSTORE_BASE64}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD}" ] && [ -n "${ANDROID_KEY_ALIAS}" ] && [ -n "${ANDROID_KEY_PASSWORD}" ]; then
-            echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > android/upload-keystore.jks
-            cat > android/key.properties <<EOF
-            storePassword=${ANDROID_KEYSTORE_PASSWORD}
-            keyPassword=${ANDROID_KEY_PASSWORD}
-            keyAlias=${ANDROID_KEY_ALIAS}
-            storeFile=upload-keystore.jks
-            EOF
-            echo "Release signing configured."
+            # Keep pipeline resilient: if signing setup fails, continue and let Gradle fallback to debug signing.
+            if echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > android/upload-keystore.jks; then
+              cat > android/key.properties <<EOF
+              storePassword=${ANDROID_KEYSTORE_PASSWORD}
+              keyPassword=${ANDROID_KEY_PASSWORD}
+              keyAlias=${ANDROID_KEY_ALIAS}
+              storeFile=upload-keystore.jks
+              EOF
+              echo "Release signing configured."
+            else
+              echo "Signing secret decode failed. Continuing without release keystore."
+              rm -f android/upload-keystore.jks android/key.properties
+            fi
           else
             echo "Signing secrets missing. Build may fallback to debug signing based on project config."
           fi
