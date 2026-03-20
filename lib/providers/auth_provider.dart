@@ -7,6 +7,20 @@ final secureStorageProvider = Provider<SecureStorageService>((ref) => SecureStor
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
+/// Loads persisted API key once and hydrates [ApiService] before API calls.
+final apiBootstrapProvider = FutureProvider<String?>((ref) async {
+  final storage = ref.watch(secureStorageProvider);
+  final api = ref.watch(apiServiceProvider);
+  final key = await storage.getApiKey();
+  final normalized = key?.trim();
+  if (normalized != null && normalized.isNotEmpty) {
+    api.setApiKey(normalized);
+  } else {
+    api.clearApiKey();
+  }
+  return normalized;
+});
+
 final capabilityServiceProvider = Provider<CapabilityService>((ref) {
   return CapabilityService(ref.watch(secureStorageProvider));
 });

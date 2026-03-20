@@ -54,7 +54,47 @@ class Agent {
     };
   }
 
-  bool get isRunning => status.toLowerCase() == 'running';
-  bool get isFinished => status.toLowerCase() == 'finished';
-  bool get isFailed => status.toLowerCase() == 'failed';
+  static const Set<String> _runningStates = {
+    'running',
+    'in_progress',
+    'processing',
+    'working',
+    'active',
+  };
+  static const Set<String> _pendingStates = {
+    'queued',
+    'pending',
+    'created',
+    'starting',
+    'initializing',
+    'waiting',
+  };
+  static const Set<String> _finishedStates = {
+    'finished',
+    'completed',
+    'succeeded',
+    'success',
+    'done',
+  };
+  static const Set<String> _failedStates = {
+    'failed',
+    'error',
+    'errored',
+    'cancelled',
+    'canceled',
+    'aborted',
+    'timeout',
+    'timed_out',
+  };
+
+  String get normalizedStatus => status.trim().toLowerCase();
+  static bool isRunningStatus(String value) => _runningStates.contains(value.trim().toLowerCase());
+  static bool isPendingStatus(String value) => _pendingStates.contains(value.trim().toLowerCase());
+  static bool isFinishedStatus(String value) => _finishedStates.contains(value.trim().toLowerCase());
+  static bool isFailedStatus(String value) => _failedStates.contains(value.trim().toLowerCase());
+  bool get isRunning => _runningStates.contains(normalizedStatus);
+  bool get isPending => _pendingStates.contains(normalizedStatus);
+  bool get isFinished => _finishedStates.contains(normalizedStatus);
+  bool get isFailed => _failedStates.contains(normalizedStatus);
+  bool get isActive => isRunning || isPending;
 }
