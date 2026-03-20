@@ -4,8 +4,8 @@ import '../../core/api_errors.dart';
 import '../../core/constants.dart';
 import '../../providers/agents_provider.dart';
 import '../../providers/shell_providers.dart';
-import '../../widgets/agent_card.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/grouped_agents_list.dart';
 import '../../widgets/loading_skeleton.dart';
 
 /// Full list of agents with pull-to-refresh.
@@ -25,25 +25,13 @@ class MyAgentsScreen extends ConsumerWidget {
               child: Text('No agents yet. Launch one from the Launch tab.'),
             );
           }
-          return RefreshIndicator(
+          return GroupedAgentsList(
+            agents: agents,
             onRefresh: () async => ref.invalidate(agentsListProvider),
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: agents.length,
-              itemBuilder: (context, i) {
-                final a = agents[i];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: AgentCard(
-                    agent: a,
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.agentDetail,
-                      arguments: a.id,
-                    ),
-                  ),
-                );
-              },
+            onAgentTap: (a) => Navigator.pushNamed(
+              context,
+              AppRoutes.agentDetail,
+              arguments: a.id,
             ),
           );
         },

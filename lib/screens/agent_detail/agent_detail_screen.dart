@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/agent_intent.dart';
 import '../../../core/api_errors.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/agent.dart';
@@ -28,6 +29,7 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
   final _messageController = TextEditingController();
   Timer? _pollTimer;
   bool _sending = false;
+  AgentIntent _intent = AgentIntent.ask;
 
   @override
   void initState() {
@@ -60,12 +62,13 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _sending) return;
+    final effectiveText = buildPromptForIntent(_intent, text);
     setState(() => _sending = true);
     _messageController.clear();
     try {
       await ref.read(apiBootstrapProvider.future);
       final api = ref.read(apiServiceProvider);
-      await api.sendMessage(widget.agentId, text);
+      await api.sendMessage(widget.agentId, effectiveText);
       ref.invalidate(conversationProvider(widget.agentId));
       ref.invalidate(agentDetailProvider(widget.agentId));
     } catch (e) {
@@ -126,7 +129,7 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 100),
+              padding: const EdgeInsets.only(bottom: 180),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -214,30 +217,73 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
                 top: 12,
                 bottom: MediaQuery.paddingOf(context).bottom + 12,
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: const InputDecoration(
-                        hintText: 'Follow-up message...',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 2,
-                      onChanged: (_) => setState(() {}),
-                      onSubmitted: (_) => _sendMessage(),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: SegmentedButton<AgentIntent>(
+                      segments: const [
+                        ButtonSegment(
+                          value: AgentIntent.ask,
+                          label: Text('Ask'),
+                          icon: Icon(Icons.chat_bubble_outline_rounded),
+                        ),
+                        ButtonSegment(
+                          value: AgentIntent.plan,
+                          label: Text('Plan'),
+                          icon: Icon(Icons.route_rounded),
+                        ),
+                        ButtonSegment(
+                          value: AgentIntent.debug,
+                          label: Text('Debug'),
+                          icon: Icon(Icons.bug_report_rounded),
+                        ),
+                      ],
+                      selected: {_intent},
+                      onSelectionChanged: (selection) {
+                        if (selection.isEmpty) return;
+                        setState(() => _intent = selection.first);
+                      },
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _sendMessage,
-                    icon: _sending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_rounded),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          decoration: InputDecoration(
+                            hintText: 'Follow-up message (${_intent.label})...',
+                            border: const OutlineInputBorder(),
+                          ),
+                          maxLines: 2,
+                          onChanged: (_) => setState(() {}),
+                          onSubmitted: (_) => _sendMessage(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: _sending ? null : _sendMessage,
+                        icon: _sending
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.send_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _intent.shortDescription,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
                   ),
                 ],
               ),

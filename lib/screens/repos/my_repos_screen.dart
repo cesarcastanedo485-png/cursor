@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/agent_intent.dart';
 import '../../core/api_errors.dart';
 import '../../data/models/cursor_repository.dart';
 import '../../providers/repositories_provider.dart';
@@ -32,10 +33,45 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
     super.dispose();
   }
 
-  void _launchOnRepo(String url) {
+  void _launchOnRepo(String url, AgentIntent intent) {
     ref.read(launchRepoPrefillProvider.notifier).state = url;
+    ref.read(launchIntentPrefillProvider.notifier).state = intent;
     ref.read(mainShellTabProvider.notifier).state = 0;
     ref.read(cloudAgentsSubTabProvider.notifier).state = 1;
+  }
+
+  Future<void> _pickLaunchIntentAndGo(String url) async {
+    final selected = await showModalBottomSheet<AgentIntent>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.chat_bubble_outline_rounded),
+              title: const Text('Ask'),
+              subtitle: Text(AgentIntent.ask.shortDescription),
+              onTap: () => Navigator.of(ctx).pop(AgentIntent.ask),
+            ),
+            ListTile(
+              leading: const Icon(Icons.route_rounded),
+              title: const Text('Plan'),
+              subtitle: Text(AgentIntent.plan.shortDescription),
+              onTap: () => Navigator.of(ctx).pop(AgentIntent.plan),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bug_report_rounded),
+              title: const Text('Debug'),
+              subtitle: Text(AgentIntent.debug.shortDescription),
+              onTap: () => Navigator.of(ctx).pop(AgentIntent.debug),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    _launchOnRepo(url, selected);
   }
 
   void _showAddRepoDialog() {
@@ -224,7 +260,7 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
                       final isManual = manualRepos.any((m) => m.repoUrl == repo.repoUrl);
                       return _RepoCard(
                         repo: repo,
-                        onLaunch: () => _launchOnRepo(repo.repoUrl),
+                        onLaunch: () => _pickLaunchIntentAndGo(repo.repoUrl),
                         isManual: isManual,
                         onRemove: isManual
                             ? () => ref.read(manualReposProvider.notifier).removeUrl(repo.repoUrl)
@@ -252,7 +288,7 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (_, i) => _RepoCard(
                           repo: manualRepos[i],
-                          onLaunch: () => _launchOnRepo(manualRepos[i].repoUrl),
+                          onLaunch: () => _pickLaunchIntentAndGo(manualRepos[i].repoUrl),
                           isManual: true,
                           onRemove: () => ref.read(manualReposProvider.notifier).removeUrl(manualRepos[i].repoUrl),
                         ),
@@ -312,7 +348,7 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
                           itemCount: manualRepos.length,
                           itemBuilder: (context, i) => _RepoCard(
                             repo: manualRepos[i],
-                            onLaunch: () => _launchOnRepo(manualRepos[i].repoUrl),
+                            onLaunch: () => _pickLaunchIntentAndGo(manualRepos[i].repoUrl),
                             isManual: true,
                             onRemove: () => ref.read(manualReposProvider.notifier).removeUrl(manualRepos[i].repoUrl),
                           ),
@@ -400,7 +436,7 @@ class _RepoCard extends StatelessWidget {
             FilledButton.icon(
               onPressed: onLaunch,
               icon: const Icon(Icons.rocket_launch_rounded, size: 22),
-              label: const Text('Launch Agent on this Repo'),
+              label: const Text('Launch Agent (Ask/Plan/Debug)'),
             ),
           ],
         ),
