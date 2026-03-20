@@ -118,13 +118,30 @@ class ApiService {
     return LaunchResponse.fromJson(r.data ?? {});
   }
 
-  /// POST /v0/agents/:id/messages (or /conversation) — send follow-up message.
+  /// POST /v0/agents/:id/followup — send follow-up message.
+  /// Falls back to legacy endpoints for older backends.
   Future<void> sendMessage(String agentId, String content) async {
     try {
+      await _dio.post('/v0/agents/$agentId/followup', data: {
+        'prompt': {'text': content}
+      });
+      return;
+    } on DioException catch (e) {
+      // Retry on legacy routes only when the modern endpoint is unsupported.
+      if (!_isLikelyLegacyFollowupEndpointError(e.response?.statusCode)) rethrow;
+    }
+
+    try {
       await _dio.post('/v0/agents/$agentId/messages', data: {'content': content});
-    } catch (_) {
+    } on DioException catch (e) {
+      if (!_isLikelyLegacyFollowupEndpointError(e.response?.statusCode)) rethrow;
       await _dio.post('/v0/agents/$agentId/conversation', data: {'message': content});
     }
+  }
+
+  bool _isLikelyLegacyFollowupEndpointError(int? statusCode) {
+    if (statusCode == null) return false;
+    return statusCode == 400 || statusCode == 404 || statusCode == 405 || statusCode == 422;
   }
 
   /// Artifact download: use presigned URL from artifact; this returns the URL string.
