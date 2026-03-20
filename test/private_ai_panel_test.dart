@@ -17,6 +17,9 @@ import 'helpers/mock_private_ai_server.dart';
 class _FakeSecureStorage extends SecureStorageService {
   @override
   Future<bool> isOnboardingDone() async => true;
+
+  @override
+  Future<String?> getApiKey() async => null;
 }
 
 void main() {
@@ -67,7 +70,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       await tester.tap(find.text(AppStrings.privateAis));
       await tester.pumpAndSettle();
@@ -89,7 +92,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       await tester.tap(find.text(AppStrings.privateAis));
       await tester.pumpAndSettle();
@@ -121,7 +124,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       await tester.tap(find.text(AppStrings.privateAis));
       await tester.pumpAndSettle();

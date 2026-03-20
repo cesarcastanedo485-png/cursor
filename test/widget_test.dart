@@ -5,12 +5,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mordechaius_maximus/app.dart';
+import 'package:mordechaius_maximus/data/local/secure_storage_service.dart';
+import 'package:mordechaius_maximus/providers/auth_provider.dart';
 import 'package:mordechaius_maximus/providers/private_chat_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeSecureStorage extends SecureStorageService {
+  @override
+  Future<bool> isOnboardingDone() async => true;
+
+  @override
+  Future<String?> getApiKey() async => null;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('App builds', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'app_backend_mode': 'private',
+      'active_private_ai_id': 'llm',
+    });
+
     final dir = await Directory.systemTemp.createTemp('mm_wt');
     Hive.init(dir.path);
     final box = await Hive.openBox<String>('mm_private_chat');
@@ -23,6 +39,7 @@ void main() {
       ProviderScope(
         overrides: [
           privateChatBoxProvider.overrideWithValue(box),
+          secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
         ],
         child: const App(),
       ),
