@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build archive name
         id: vars
@@ -27,7 +27,7 @@ jobs:
           git archive --format=zip --output "${{ steps.vars.outputs.artifact_name }}.zip" HEAD
 
       - name: Upload ZIP artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.vars.outputs.artifact_name }}
           path: ${{ steps.vars.outputs.artifact_name }}.zip
