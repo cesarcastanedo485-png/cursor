@@ -171,12 +171,13 @@ def _validate_folder_context(folder: dict, auth_mode: str, shared_drive_id: str)
     impersonated_user = _env("GDRIVE_IMPERSONATED_USER")
     if auth_mode == "service_account" and not folder_drive_id and not impersonated_user:
         _fail(
-            "Service account target folder is in My Drive (not Shared Drive), but no impersonated user is configured.\n"
-            "Service accounts do not have their own consumer storage quota.\n"
+            "Service account cannot write to My Drive (personal storage).\n"
+            "Your GDRIVE_FOLDER_ID points to a folder in My Drive.\n\n"
             "Use one of:\n"
-            "1) Shared Drive: add service account as member and set GDRIVE_SHARED_DRIVE_ID.\n"
-            "2) OAuth user credentials (refresh token).\n"
-            "3) Domain-wide delegation: set GDRIVE_IMPERSONATED_USER for a Workspace user."
+            "1) SHARED DRIVE: Create a Shared Drive, add the service account as member (Writer/Content manager), "
+            "create APKS folder inside it, and use that folder ID. See docs/SETUP_DRIVE_APK.md.\n"
+            "2) OAUTH: Use GDRIVE_OAUTH_* secrets (refresh token) to upload to your personal Drive.\n"
+            "3) DOMAIN DELEGATION: Set GDRIVE_IMPERSONATED_USER (Google Workspace admin only)."
         )
 
 

@@ -29,12 +29,14 @@ Stored on-device with **flutter_secure_storage**. It is never written to the rep
 
 ## Google Drive upload auth (GitHub Actions)
 
-The APK upload workflow supports two paths:
+**Step-by-step:** See `docs/SETUP_DRIVE_APK.md`.
+
+The APK upload workflow supports three paths:
 
 1. **Service account + Shared Drive** (recommended for service accounts)
-   - Set `GDRIVE_SERVICE_ACCOUNT_JSON`, `GDRIVE_FOLDER_ID`, and `GDRIVE_SHARED_DRIVE_ID`.
-   - Add the service-account email as a member of the Shared Drive (Editor or better).
-   - Use a folder that belongs to that Shared Drive.
+   - Create a Shared Drive, add service account as member (Writer/Content manager).
+   - Create APKS folder inside the Shared Drive.
+   - Set `GDRIVE_SERVICE_ACCOUNT_JSON`, `GDRIVE_FOLDER_ID`, and optionally `GDRIVE_SHARED_DRIVE_ID`.
 
 2. **OAuth user credentials** (real user storage quota)
    - Set `GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`, and `GDRIVE_FOLDER_ID`.
