@@ -40,6 +40,11 @@ The APK upload workflow supports two paths:
    - Set `GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`, and `GDRIVE_FOLDER_ID`.
    - Use a folder accessible by that user account.
 
+Optional upload targeting:
+
+- `GDRIVE_TARGET_FILENAME`: force a stable file name in the folder (default: APK file basename).
+- `GDRIVE_TARGET_FILE_ID`: update an exact existing Drive file ID in the folder (preserves file ID/share link).
+
 Optional for Workspace admins:
 
 - **Domain-wide delegation impersonation** with service account:

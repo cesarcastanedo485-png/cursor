@@ -56,19 +56,22 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Rename APK with commit SHA
+      - name: Prepare APK outputs
         shell: bash
         run: |
           APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
-          DEST_PATH="build/app/outputs/flutter-apk/MordechaiusMaximus-${GITHUB_SHA::7}.apk"
-          cp "${APK_PATH}" "${DEST_PATH}"
-          echo "APK_PATH=${DEST_PATH}" >> "$GITHUB_ENV"
+          SHA_APK_PATH="build/app/outputs/flutter-apk/MordechaiusMaximus-${GITHUB_SHA::7}.apk"
+          DRIVE_APK_PATH="build/app/outputs/flutter-apk/MordechaiusMaximus-install.apk"
+          cp "${APK_PATH}" "${SHA_APK_PATH}"
+          cp "${APK_PATH}" "${DRIVE_APK_PATH}"
+          echo "SHA_APK_PATH=${SHA_APK_PATH}" >> "$GITHUB_ENV"
+          echo "DRIVE_APK_PATH=${DRIVE_APK_PATH}" >> "$GITHUB_ENV"
 
       - name: Upload artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: apk-${{ github.sha }}
-          path: ${{ env.APK_PATH }}
+          path: ${{ env.SHA_APK_PATH }}
           if-no-files-found: error
 
       - name: "Upload APK to Google Drive (folder: APKS)"
@@ -80,7 +83,8 @@ jobs:
           GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
           GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
           GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
-          APK_PATH: ${{ env.APK_PATH }}
+          APK_PATH: ${{ env.DRIVE_APK_PATH }}
+          GDRIVE_TARGET_FILENAME: MordechaiusMaximus-install.apk
         run: |
           python -m pip install --upgrade pip
           python -m pip install google-api-python-client google-auth google-auth-httplib2

@@ -96,6 +96,56 @@ def _resolve_inputs() -> Tuple[str, str, str]:
     return folder_id, apk_path, shared_drive_id
 
 
+def _escape_drive_query_value(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
+def _resolve_target_filename(apk_path: str) -> str:
+    return _env("GDRIVE_TARGET_FILENAME") or os.path.basename(apk_path)
+
+
+def _pick_existing_target_file(service, folder_id: str, target_filename: str):
+    target_file_id = _env("GDRIVE_TARGET_FILE_ID")
+    if target_file_id:
+        selected = (
+            service.files()
+            .get(
+                fileId=target_file_id,
+                fields="id,name,parents,webViewLink,webContentLink",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        parents = selected.get("parents") or []
+        if folder_id not in parents:
+            _fail(
+                "GDRIVE_TARGET_FILE_ID is not inside GDRIVE_FOLDER_ID. "
+                "Use a file in the target folder, or unset GDRIVE_TARGET_FILE_ID."
+            )
+        return selected
+
+    safe_name = _escape_drive_query_value(target_filename)
+    response = (
+        service.files()
+        .list(
+            q=f"'{folder_id}' in parents and trashed = false and name = '{safe_name}'",
+            fields="files(id,name,modifiedTime,webViewLink,webContentLink)",
+            includeItemsFromAllDrives=True,
+            supportsAllDrives=True,
+            orderBy="modifiedTime desc",
+            pageSize=10,
+        )
+        .execute()
+    )
+    files = response.get("files", [])
+    if len(files) > 1:
+        print(
+            f"Found {len(files)} existing files named {target_filename!r}; "
+            "updating the most recently modified one."
+        )
+    return files[0] if files else None
+
+
 def _validate_folder_context(folder: dict, auth_mode: str, shared_drive_id: str) -> None:
     folder_mime = folder.get("mimeType")
     folder_drive_id = folder.get("driveId") or ""
@@ -153,18 +203,40 @@ def main() -> None:
     print(f"Drive folder access OK: {folder.get('name')} ({folder.get('id')}) in {folder_drive_id}")
     print(f"Auth mode: {auth_mode}")
 
-    filename = os.path.basename(apk_path)
-    file_metadata = {"name": filename, "parents": [folder_id]}
+    target_filename = _resolve_target_filename(apk_path)
+    file_metadata = {"name": target_filename, "parents": [folder_id]}
     media = MediaFileUpload(apk_path, mimetype="application/vnd.android.package-archive", resumable=True)
+    existing_file = _pick_existing_target_file(service, folder_id, target_filename)
+    if existing_file:
+        updated = (
+            service.files()
+            .update(
+                fileId=existing_file["id"],
+                body={"name": target_filename},
+                media_body=media,
+                fields="id,name,webViewLink,webContentLink,parents,driveId",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        print("Updated existing Google Drive APK:")
+        print(f"id={updated.get('id')}")
+        print(f"name={updated.get('name')}")
+        print(f"webViewLink={updated.get('webViewLink')}")
+        print(f"webContentLink={updated.get('webContentLink')}")
+        return
 
-    created = service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields="id,name,webViewLink,webContentLink,parents,driveId",
-        supportsAllDrives=True,
-    ).execute()
-
-    print("Uploaded to Google Drive:")
+    created = (
+        service.files()
+        .create(
+            body=file_metadata,
+            media_body=media,
+            fields="id,name,webViewLink,webContentLink,parents,driveId",
+            supportsAllDrives=True,
+        )
+        .execute()
+    )
+    print("Uploaded new APK to Google Drive:")
     print(f"id={created.get('id')}")
     print(f"name={created.get('name')}")
     print(f"webViewLink={created.get('webViewLink')}")
