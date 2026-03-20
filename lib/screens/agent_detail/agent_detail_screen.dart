@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api_errors.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/agent.dart';
+import '../../../data/models/conversation.dart';
 import '../../../providers/agents_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/app_lifecycle_provider.dart';
@@ -53,12 +54,16 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
     _pollTimer = null;
   }
 
+  bool _isAwaitingAssistantReply(Agent agent, List<ConversationMessage> messages) =>
+      agent.isActive && messages.isNotEmpty && messages.last.isUser;
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     _messageController.clear();
     try {
+      await ref.read(apiBootstrapProvider.future);
       final api = ref.read(apiServiceProvider);
       await api.sendMessage(widget.agentId, text);
       ref.invalidate(conversationProvider(widget.agentId));
@@ -135,19 +140,24 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
                   const SizedBox(height: 8),
                   conversationAsync.when(
                     data: (conv) {
+                      final showTyping = _sending || _isAwaitingAssistantReply(agent, conv.messages);
                       if (conv.messages.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            'No messages yet.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text('No messages yet.'),
+                            ),
+                            if (showTyping) const _AssistantTypingBubble(),
+                          ],
                         );
                       }
                       return Column(
-                        children: conv.messages.map((m) => ChatBubble(message: m)).toList(),
+                        children: [
+                          ...conv.messages.map((m) => ChatBubble(message: m)),
+                          if (showTyping) const _AssistantTypingBubble(),
+                        ],
                       );
                     },
                     loading: () => const Padding(
@@ -243,11 +253,13 @@ class _StatusSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = agent.isRunning
+    final color = agent.isRunning || agent.isPending
         ? AppColors.statusRunning
         : agent.isFinished
             ? AppColors.statusFinished
-            : AppColors.statusFailed;
+            : agent.isFailed
+                ? AppColors.statusFailed
+                : Theme.of(context).colorScheme.outline;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Card(
@@ -306,6 +318,94 @@ class _PrLink extends StatelessWidget {
           final uri = Uri.parse(url);
           if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
         },
+      ),
+    );
+  }
+}
+
+class _AssistantTypingBubble extends StatefulWidget {
+  const _AssistantTypingBubble();
+
+  @override
+  State<_AssistantTypingBubble> createState() => _AssistantTypingBubbleState();
+}
+
+class _AssistantTypingBubbleState extends State<_AssistantTypingBubble> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Assistant',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (index) => _dot(context, index)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dot(BuildContext context, int index) {
+    final shifted = (_controller.value + (index * 0.2)) % 1.0;
+    final amplitude = (0.5 - (shifted - 0.5).abs()) * 2;
+    final dy = -4.0 * amplitude;
+    final opacity = 0.35 + (0.65 * amplitude);
+
+    return Opacity(
+      opacity: opacity,
+      child: Transform.translate(
+        offset: Offset(0, dy),
+        child: Container(
+          width: 7,
+          height: 7,
+          margin: EdgeInsets.only(right: index == 2 ? 0 : 5),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            shape: BoxShape.circle,
+          ),
+        ),
       ),
     );
   }
