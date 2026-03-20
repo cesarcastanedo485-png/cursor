@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Minimal interface for capability config lookup. Allows testing with mocks.
+abstract class CapabilityConfigProvider {
+  Future<CapabilityConfig?> getCapabilityConfig(String capabilityId);
+}
+
 /// Keys for secure storage.
 const String _keyApiKey = 'cursor_cloud_agents_api_key';
 const String _keyOnboardingDone = 'onboarding_done';
@@ -8,7 +13,7 @@ const String _keyCapabilityPrefix = 'capability_config_';
 const String _keyManualRepoUrls = 'manual_repo_urls';
 
 /// Encrypted storage for API key, onboarding state, and capability config.
-class SecureStorageService {
+class SecureStorageService implements CapabilityConfigProvider {
   SecureStorageService() : _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
   final FlutterSecureStorage _storage;

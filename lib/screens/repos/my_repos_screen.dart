@@ -99,6 +99,12 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
     final q = _search.text.trim().toLowerCase();
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddRepoDialog,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add repo'),
+        tooltip: 'Add repo by URL (e.g. https://github.com/owner/repo)',
+      ),
       appBar: AppBar(
         title: const Text('My Repos'),
         actions: [

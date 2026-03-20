@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/local/secure_storage_service.dart';
 import '../services/api_service.dart';
+import '../services/capability_service.dart';
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) => SecureStorageService());
 
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService();
+final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+
+final capabilityServiceProvider = Provider<CapabilityService>((ref) {
+  return CapabilityService(ref.watch(secureStorageProvider));
 });
 
 /// Current API key (from secure storage). Null until loaded or set.

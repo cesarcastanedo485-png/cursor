@@ -46,6 +46,7 @@ app.*.map.json
 
 # Local / secrets (do not commit)
 local.properties
+android/key.properties
 *.jks
 *.keystore
 .env

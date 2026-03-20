@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Required for release builds (debug/profile add this in their manifests; main must include it for merged release). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Open APK installer after in-app update download -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="Mordechaius Maximus"
         android:name="${applicationName}"

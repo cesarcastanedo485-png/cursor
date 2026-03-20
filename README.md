@@ -19,10 +19,19 @@ Flutter app (Android & iOS) for **Cursor Pro Cloud Agents** (tab: **Cloud Agents
 - **Cursor Pro** + Cloud Agents API key — [Dashboard](https://cursor.com/dashboard?tab=cloud-agents)
 - **Windows:** Developer Mode (symlinks) if `flutter pub get` warns about plugins.
 
+## Release quality (v1)
+
+- **Pre-push / local gate:** `.\scripts\pre_push.ps1` — `pub get`, `analyze`, `test`
+- **CI:** `.github/workflows/flutter_ci.yml` — analyze + test on push/PR
+- **Checklist:** `docs/RELEASE_CHECKLIST.md`
+- **Secrets / signing:** `docs/SECRETS.md` — copy `android/key.properties.example` → `android/key.properties` (not committed)
+- **Updates:** `docs/UPDATES.md` | **Privacy template:** `docs/PRIVACY_POLICY_TEMPLATE.md` | **Cursor ToS note:** `docs/DISTRIBUTION_AND_CURSOR_TOS.md`
+- **Beta vs v1:** see top of `docs/RELEASE_CHECKLIST.md`
+
 ## Run
 
 ```bash
-cd mordechaius-maximus
+cd cursor_mobile
 flutter pub get
 flutter run
 ```

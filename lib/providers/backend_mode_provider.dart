@@ -37,11 +37,15 @@ class BackendStateNotifier extends StateNotifier<BackendState> {
   final Ref _ref;
 
   Future<void> _load() async {
-    final prefs = await _ref.read(preferencesProvider.future);
-    state = BackendState(
-      mode: prefs.backendMode == 'private' ? AppBackendMode.privateLocal : AppBackendMode.cursorCloud,
-      activePrivateAiId: prefs.activePrivateAiId,
-    );
+    try {
+      final prefs = await _ref.read(preferencesProvider.future);
+      state = BackendState(
+        mode: prefs.backendMode == 'private' ? AppBackendMode.privateLocal : AppBackendMode.cursorCloud,
+        activePrivateAiId: prefs.activePrivateAiId,
+      );
+    } catch (_) {
+      // Keep default state if prefs fail (e.g. first run)
+    }
   }
 
   Future<void> setMode(AppBackendMode mode) async {

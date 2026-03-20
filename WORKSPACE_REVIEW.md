@@ -1,4 +1,4 @@
-# Mordechaius Maximus — Workspace Review
+﻿# Mordechaius Maximus — Workspace Review
 
 Review of what’s working, what’s not cemented, and what’s needed to increase functionality. Many areas are functional; several are explicitly placeholder or future-only.
 
@@ -43,10 +43,10 @@ Review of what’s working, what’s not cemented, and what’s needed to increa
 
 ## 2. What’s not yet cemented / incomplete
 
-### Capabilities tab — placeholders
-- **Test** button: shows a dialog saying “Safety stub — no SMS, post, or device action is performed. A future build can call your desktop bridge after you confirm.” No real integration.
-- **Configure** button: dialog says “Future: API keys, webhook URLs, and folder paths for [tool] (stored with flutter_secure_storage).” No persistence or UI for credentials.
-- **Tools** are documentation + stubs only; no desktop bridge, no real SMS/Messenger/OBS/Opus/etc. calls.
+### Capabilities tab — implemented (v2.0.2+)
+- **Test** button: pings configured webhook URL; shows success or error. Real connectivity check.
+- **Configure** button: stores API key, webhook URL, folder path per capability in `flutter_secure_storage`. Persistence + UI.
+- **Execute** button: sends POST to webhook with action and payload. Smart home (lights, thermostat, Alexa) has action picker. Bridge script (`scripts/smarthome_bridge.py`) forwards to Home Assistant or IFTTT.
 
 ### Repos tab — 401 handling
 - If Cursor API returns **401** (e.g. bad/expired key), Dio throws; error message is raw (“request options.valid status was configured to throw 401”). No user-friendly “Invalid or expired API key” or prompt to re-enter key in Settings.
@@ -104,5 +104,5 @@ Review of what’s working, what’s not cemented, and what’s needed to increa
 ## 4. Summary
 
 - **Solid:** Auth, onboarding, Cloud Agents (list, launch, detail, conversation, artifacts, repos), Private AIs (chat, TTS, image/video, persistence, backend mode), app shell, theme, routing, cache, Android release build.
-- **Placeholder / not cemented:** Capabilities Test (stub) and Configure (no storage); 401 and send-message error handling; Home title; optional Private AI pre-check; Instruction manual rich text.
+- **Placeholder / not cemented:** 401 and send-message error handling; Home title; optional Private AI pre-check; Instruction manual rich text.
 - **Next steps to increase functionality:** Implement Configure persistence and UI, improve 401 and send-message UX, unify Home title, add Private AI reachability check, then consider desktop bridge or “Test” integration for Capabilities.

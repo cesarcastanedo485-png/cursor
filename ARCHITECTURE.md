@@ -87,8 +87,8 @@ mordechaius-maximus/
 
 | File | Purpose |
 |------|--------|
-| `main.dart` | Run app, override error handling, call `runApp(App())` |
-| `app.dart` | Check onboarding; show OnboardingScreen or main shell with bottom nav (Home, Launch, My Agents, Settings) |
+| `main.dart` | `WidgetsFlutterBinding`, Hive, `ProviderScope`, `runApp(App())` |
+| `app.dart` | Onboarding gate; `MaterialApp` + theme; main shell = **Active AI banner** + `IndexedStack` (Cloud Agents shell, Private AIs, Capabilities) + `NavigationBar`; named routes via `AppRouter` for push flows (e.g. agent detail) |
 | `constants.dart` | `baseUrl = https://api.cursor.com`, route names |
 | `app_theme.dart` | ThemeData dark/light, typography, component themes |
 | `app_colors.dart` | Semantic colors (surface, primary, error, etc.) |

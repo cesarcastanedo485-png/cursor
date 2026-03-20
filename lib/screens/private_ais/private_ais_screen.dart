@@ -20,45 +20,84 @@ class _PrivateAisScreenState extends ConsumerState<PrivateAisScreen> {
   String? _testingId;
 
   Future<void> _openPreset(PrivateAiPreset p) async {
-    final prefs = await ref.read(preferencesProvider.future);
-    final cfg = prefs.getPrivateAiConfig(p.id) ?? p.defaultConfig(prefs);
     if (!mounted) return;
-
-    final svc = LocalOpenAiService(
-      baseUrl: cfg.baseUrl,
-      model: cfg.model,
-      apiKey: cfg.apiKey.isEmpty ? null : cfg.apiKey,
-    );
-    final reachable = await svc.ping();
-    if (!mounted) return;
-    if (!reachable) {
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Connection check'),
-          content: Text(
-            'Could not reach ${cfg.baseUrl}. '
-            'Check Wi‑Fi, VPN, or that the server is running. Continue anyway?',
+    final navigator = Navigator.of(context);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 16),
+              Text('Connecting…'),
+            ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continue anyway')),
-          ],
         ),
-      );
-      if (go != true || !mounted) return;
-    }
+      ),
+    );
+    try {
+      final prefs = await ref.read(preferencesProvider.future);
+      if (!mounted) {
+        navigator.pop();
+        return;
+      }
+      final cfg = prefs.getPrivateAiConfig(p.id) ?? p.defaultConfig(prefs);
 
-    if (p.kind == PrivateAiKind.llm) {
-      await Navigator.push<void>(
-        context,
-        MaterialPageRoute<void>(builder: (_) => PrivateAiChatScreen(preset: p)),
+      final svc = LocalOpenAiService(
+        baseUrl: cfg.baseUrl,
+        model: cfg.model,
+        apiKey: cfg.apiKey.isEmpty ? null : cfg.apiKey,
       );
-    } else {
-      await Navigator.push<void>(
-        context,
-        MaterialPageRoute<void>(builder: (_) => PrivateMediaScreen(preset: p, config: cfg)),
-      );
+      final reachable = await svc.ping();
+      if (!mounted) {
+        navigator.pop();
+        return;
+      }
+      navigator.pop(); // dismiss loading before next step
+      if (!reachable) {
+        final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Connection check'),
+            content: Text(
+              'Could not reach ${cfg.baseUrl}. '
+              'Check Wi‑Fi, VPN, or that the server is running. Continue anyway?',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continue anyway')),
+            ],
+          ),
+        );
+        if (go != true || !mounted) return;
+      }
+      if (!mounted) return;
+      if (p.kind == PrivateAiKind.llm) {
+        await Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(builder: (_) => PrivateAiChatScreen(preset: p)),
+        );
+      } else {
+        await Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(builder: (_) => PrivateMediaScreen(preset: p, config: cfg)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        navigator.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 

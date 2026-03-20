@@ -1,7 +1,7 @@
 name: mordechaius_maximus
 description: Mordechaius Maximus — Cloud Agents, Private AIs, Capabilities.
 publish_to: 'none'
-version: 2.0.2+12
+version: 2.0.3+13
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -38,6 +38,7 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path: ^1.9.0
+  open_file: ^3.5.0
 
   # Utilities
   intl: ^0.20.2

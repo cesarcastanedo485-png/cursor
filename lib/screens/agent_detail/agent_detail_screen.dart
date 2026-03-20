@@ -7,11 +7,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/agent.dart';
 import '../../../providers/agents_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/app_lifecycle_provider.dart';
 import '../../widgets/chat_bubble.dart';
 import '../../widgets/artifact_tile.dart';
 import '../../widgets/error_view.dart';
 
 /// Agent detail: status, conversation, artifacts, follow-up input, PR link.
+/// Polling pauses when app is in background so connection stays stable on resume.
 class AgentDetailScreen extends ConsumerStatefulWidget {
   const AgentDetailScreen({super.key, required this.agentId});
 
@@ -34,7 +36,7 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    _stopPolling();
     _messageController.dispose();
     super.dispose();
   }
@@ -44,6 +46,11 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
     _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) ref.invalidate(agentDetailProvider(widget.agentId));
     });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 
   Future<void> _sendMessage() async {
@@ -74,6 +81,15 @@ class _AgentDetailScreenState extends ConsumerState<AgentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pause polling when app goes to background; resume when back in foreground
+    ref.listen<bool>(isAppForegroundProvider, (prev, next) {
+      if (next == false) {
+        _stopPolling();
+      } else if (next == true && mounted) {
+        _startPolling();
+      }
+    });
+
     final agentAsync = ref.watch(agentDetailProvider(widget.agentId));
     final conversationAsync = ref.watch(conversationProvider(widget.agentId));
     final artifactsAsync = ref.watch(artifactsProvider(widget.agentId));

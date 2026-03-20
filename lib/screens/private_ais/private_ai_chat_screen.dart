@@ -169,6 +169,11 @@ class _PrivateAiChatScreenState extends ConsumerState<PrivateAiChatScreen> {
       await repo.append(aiId: aiId, role: 'assistant', content: reply);
     } catch (e) {
       await repo.append(aiId: aiId, role: 'assistant', content: 'Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Couldn\'t get reply: ${e.toString().split('\n').first}')),
+        );
+      }
     }
     if (mounted) {
       setState(() => _sending = false);

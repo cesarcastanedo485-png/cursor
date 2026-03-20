@@ -27,13 +27,19 @@ class CursorRepository {
     return 'https://github.com/$name';
   }
 
+  static String? _ownerFromJson(dynamic v) {
+    if (v is String) return v;
+    if (v is Map) return (v['login'] ?? v['name'])?.toString();
+    return null;
+  }
+
   static CursorRepository fromJson(Map<String, dynamic> j) {
     DateTime? parsed;
     final u = j['updated_at'] ?? j['updatedAt'] ?? j['pushed_at'] ?? j['last_activity_at'];
     if (u is String) {
       parsed = DateTime.tryParse(u);
     }
-    final owner = j['owner'] as String?;
+    final owner = _ownerFromJson(j['owner']);
     final name = (j['name'] ?? j['repo'] ?? fullNameFrom(j) ?? 'repo').toString();
     final fullName = j['full_name'] as String? ?? j['fullName'] as String? ?? (owner != null ? '$owner/$name' : null);
     final repoUrlRaw = j['repository'] as String?;
@@ -51,7 +57,7 @@ class CursorRepository {
   static String? fullNameFrom(Map<String, dynamic> j) {
     final n = j['full_name'] ?? j['fullName'];
     if (n != null) return n.toString();
-    final owner = j['owner'] as String?;
+    final owner = _ownerFromJson(j['owner']);
     final name = j['name'] as String?;
     if (owner != null && name != null) return '$owner/$name';
     return null;

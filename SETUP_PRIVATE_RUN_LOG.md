@@ -19,7 +19,7 @@ What was executed on your machine (approx. order):
 1. **Full 72B LLM** (doc target — long download):
 
    ```powershell
-   cd C:\Users\cmc\mordechaius-maximus
+   cd C:\Users\cmc\cursor_mobile
    .\scripts\complete_private_ai_setup.ps1
    ```
 
@@ -34,8 +34,8 @@ What was executed on your machine (approx. order):
 
 3. **Windows Firewall**: allow **11434** (Ollama) and **8188** (ComfyUI) inbound on Private network.
 
-4. **Mordechaius Maximus**: Settings → set PC LAN IP; My Private AIs → URL `http://YOUR_IP:11434`, model **`qwen2.5:7b`** (or your 72B name after pull).
+4. **Mordechaius Maximus**: Settings → set PC LAN IP (run `ipconfig` for IPv4); My Private AIs → URL `http://YOUR_IP:11434`, model **`qwen2.5:7b`** (or your 72B name after pull).
 
 ## Script location
 
-`mordechaius-maximus\scripts\complete_private_ai_setup.ps1`
+`cursor_mobile\scripts\complete_private_ai_setup.ps1`

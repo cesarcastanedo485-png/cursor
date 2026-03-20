@@ -30,7 +30,7 @@ Run the server (usually automatic). Default API:
 
 In **Mordechaius Maximus → My Private AIs** (LLM preset), set:
 
-- **Server URL:** `http://YOUR_PC_LAN_IP:11434` (e.g. `http://192.168.1.100:11434`)
+- **Server URL:** `http://YOUR_PC_LAN_IP:11434` (e.g. `http://192.168.1.100:11434`). Get your PC IP: run `ipconfig` (Windows) → IPv4 Address.
 - **Model:** `qwen3.5:72b`
 
 ---

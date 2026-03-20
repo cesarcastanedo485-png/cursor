@@ -21,6 +21,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _obscure = true;
   bool _testing = false;
   String? _testError;
+  bool _didPrefillKey = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didPrefillKey) return;
+      final v = ref.read(apiKeyProvider).valueOrNull;
+      if (v != null && v.isNotEmpty) {
+        setState(() {
+          _keyController.text = v;
+          _didPrefillKey = true;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -70,13 +86,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final keyAsync = ref.watch(apiKeyProvider);
+
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (keyAsync.hasError)
+              MaterialBanner(
+                content: Text(
+                  'Could not read secure storage: ${keyAsync.error}',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => ref.invalidate(apiKeyProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               const SizedBox(height: 24),
               SvgPicture.asset(
                 'assets/mm_logo.svg',
@@ -157,8 +192,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPressed: _testing ? null : _saveAndContinue,
                 child: const Text('Save and continue without testing'),
               ),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -25,23 +25,22 @@ gh repo create mordechaius-maximus --private --source=. --remote=origin --push
 
 ---
 
-## 2. Add remote and push (replace `YOUR_USERNAME` with your GitHub username)
+## 2. Add remote and push
 
 ```powershell
-cd C:\Users\cmc\mordechaius-maximus
+cd C:\Users\cmc\cursor_mobile
 
-git remote add origin https://github.com/YOUR_USERNAME/mordechaius-maximus.git
+git remote add origin https://github.com/cesarcastanedo485-png/mordechaius-maximus.git
 git push -u origin main
 ```
 
-Example: if your username is `jane`, use  
-`https://github.com/jane/mordechaius-maximus.git`
+Your repo: `https://github.com/cesarcastanedo485-png/mordechaius-maximus.git`
 
 ---
 
 ## 3. If Git asks for credentials (HTTPS)
 
-- **Username:** your GitHub username  
+- **Username:** cesarcastanedo485-png  
 - **Password:** use a **Personal Access Token (PAT)**, not your GitHub password.
 
 **Create a PAT:**
@@ -63,7 +62,7 @@ After the next successful push, Git will reuse the stored credentials.
 
 ## 4. After a successful push
 
-- **Repo URL:** `https://github.com/YOUR_USERNAME/mordechaius-maximus` (or whatever you named it).
+- **Repo URL:** `https://github.com/cesarcastanedo485-png/mordechaius-maximus` (or whatever you named it).
 - In the **Mordechaius Maximus** app: open **My Repos**, pull to refresh. The repo should appear once **GitHub is connected in Cursor** (Cursor dashboard / desktop) and Cursor has synced your GitHub repos.
 
 ---
