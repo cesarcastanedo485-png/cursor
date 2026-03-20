@@ -104,6 +104,28 @@ jobs:
           creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
           service = build("drive", "v3", credentials=creds)
 
+          # Preflight: verify the parent folder exists and this service account can access it.
+          try:
+              folder = service.files().get(
+                  fileId=folder_id,
+                  fields="id,name,mimeType,driveId,parents",
+                  supportsAllDrives=True
+              ).execute()
+              if folder.get("mimeType") != "application/vnd.google-apps.folder":
+                  raise SystemExit(
+                      f"GDRIVE_FOLDER_ID is not a folder (mimeType={folder.get('mimeType')}). "
+                      "Use the APKS folder ID from the Drive URL."
+                  )
+              print(f"Drive folder access OK: {folder.get('name')} ({folder.get('id')})")
+          except Exception as e:
+              raise SystemExit(
+                  "Cannot access folder with GDRIVE_FOLDER_ID. "
+                  "Check: (1) secret is raw folder ID only, not URL; "
+                  "(2) APKS is shared to service account as Editor; "
+                  "(3) folder is in the same account/shared drive context. "
+                  f"Original error: {e}"
+              )
+
           filename = os.path.basename(apk_path)
           file_metadata = {"name": filename, "parents": [folder_id]}
           media = MediaFileUpload(apk_path, mimetype="application/vnd.android.package-archive", resumable=True)
