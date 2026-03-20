@@ -98,7 +98,9 @@ jobs:
               raise SystemExit(f"APK not found: {apk_path}")
 
           info = json.loads(creds_json)
-          scopes = ["https://www.googleapis.com/auth/drive.file"]
+          # drive.file can be too restrictive when writing into an existing shared folder.
+          # Use full Drive scope for CI service-account uploads.
+          scopes = ["https://www.googleapis.com/auth/drive"]
           creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
           service = build("drive", "v3", credentials=creds)
 
@@ -109,7 +111,8 @@ jobs:
           created = service.files().create(
               body=file_metadata,
               media_body=media,
-              fields="id,name,webViewLink,webContentLink"
+              fields="id,name,webViewLink,webContentLink",
+              supportsAllDrives=True
           ).execute()
 
           print("Uploaded to Google Drive:")
