@@ -2,9 +2,9 @@
 
 Flutter app (Android & iOS) for **Cursor Pro Cloud Agents**
 
-## GitHub (optional for the APK, useful for Cursor & backup)
+## GitHub (recommended for APK delivery, Cursor, and backup)
 
-The app **does not require** a GitHub repo to install or run.  
+The app **does not require** a GitHub repo to install or run, but GitHub Actions is the easiest way to get fresh APK builds from any push.
 Remote **`origin`:** `https://github.com/cesarcastanedo485-png/cursor` — see **[GITHUB_SETUP_NOW.md](GITHUB_SETUP_NOW.md)** for setup notes.
 
 ### Automatic source ZIP on every push (mobile-friendly)
@@ -50,26 +50,27 @@ flutter run
 
 **Faster dev loop (emulator or USB):** start an AVD in **Android Studio → Device Manager**, then `flutter run` — use **hot reload** (`r`). See **[DEV_LOOP.md](DEV_LOOP.md)** and `.\scripts\run_on_emulator.ps1`.
 
-## Release APK & install on phone (Google Drive)
+## Release APK & install on phone (GitHub Actions)
 
-To build the APK and get it on your phone via Google Drive:
+Every push triggers **Build APK and Upload to GitHub** (`.github/workflows/apk_to_github.yml`).
 
-```powershell
-.\scripts\copy_apk_for_phone.ps1 -Build
-```
+Quick flow:
 
-This builds the release APK and copies **`MordechaiusMaximus-install.apk`** to your **Desktop**. Upload that file to Google Drive, then on your phone: open Drive → find the file → ⋮ → Download → open from Files/Downloads → Install.
+1. Push your changes to GitHub.
+2. Open **GitHub → Actions → Build APK and Upload to GitHub**.
+3. Open the latest run and download the APK artifact (`apk-<branch>-<sha>`).
+4. Install the downloaded `.apk` on your phone from Files/Downloads.
 
 **Full steps:** **[INSTALL_ON_PHONE.md](INSTALL_ON_PHONE.md)** — use the **`.apk`** file only (not `.code-workspace`).
 
-Manual build and copy:
+Manual local build is still available:
 
 ```powershell
 flutter build apk --release
 .\scripts\copy_apk_for_phone.ps1
 ```
 
-Output APK: **`build/app/outputs/flutter-apk/app-release.apk`** → copied to **`Desktop\MordechaiusMaximus-install.apk`**.
+Output APK: **`build/app/outputs/flutter-apk/app-release.apk`** (or copied to **`Desktop\MordechaiusMaximus-install.apk`** via script).
 
 ## Tabs
 

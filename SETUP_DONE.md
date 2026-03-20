@@ -49,14 +49,9 @@ flutter run
 3. Connect the phone with USB and allow debugging when prompted.
 4. Run `flutter run` and select your device.
 
-### Install via Google Drive (APK, not workspace file)
+### Install via GitHub (APK, not workspace file)
 
-- The app file is **`app-release.apk`** only. **Never** upload **`.code-workspace`** — that’s not the app.
-- After `flutter build apk --release`, run:
-
-  ```powershell
-  cd C:\Users\cmc\mordechaius-maximus
-  .\scripts\copy_apk_for_phone.ps1
-  ```
-
-  This copies **`MordechaiusMaximus-install.apk`** to your **Desktop** for easy upload. See **INSTALL_ON_PHONE.md**.
+- The app file is the generated **`.apk`** only. **Never** upload/use **`.code-workspace`** — that’s not the app.
+- Push your branch, then open **GitHub → Actions → Build APK and Upload to GitHub**.
+- Download artifact `apk-<branch>-<sha>`, extract it, and install the APK on your phone.
+- Full guide: **INSTALL_ON_PHONE.md**.

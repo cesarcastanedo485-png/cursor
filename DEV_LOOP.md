@@ -1,4 +1,4 @@
-# Fast testing (emulator & USB) + release APK for Drive
+# Fast testing (emulator & USB) + release APK via GitHub
 
 ## 1. Test on Android emulator (recommended dev loop)
 
@@ -60,14 +60,14 @@ cd C:\Users\cmc\mordechaius-maximus
 
 ---
 
-## 3. Release APK for Google Drive (not for daily dev)
+## 3. Release APK via GitHub Actions (not for daily dev)
 
 ```powershell
 cd C:\Users\cmc\mordechaius-maximus
-.\scripts\copy_apk_for_phone.ps1 -Build
+git push
 ```
 
-Output: **`Desktop\MordechaiusMaximus-install.apk`** → upload to Google Drive.
+Then download the artifact from **GitHub Actions → Build APK and Upload to GitHub**.
 
 ---
 
@@ -104,4 +104,4 @@ Android Studio may show this even on **Windows 10/11**. You usually **do not nee
 
 - **No** upload to Drive, **no** manual install for every change.  
 - **Hot reload** in seconds instead of a full APK cycle.  
-- Use **release APK + Drive** when you want a real install test or to update your phone.
+- Use **release APK + GitHub artifact** when you want a real install test or to update your phone.
