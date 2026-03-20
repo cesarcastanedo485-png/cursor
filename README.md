@@ -7,6 +7,18 @@ Flutter app (Android & iOS) for **Cursor Pro Cloud Agents**
 The app **does not require** a GitHub repo to install or run.  
 Remote **`origin`:** `https://github.com/cesarcastanedo485-png/cursor` — see **[GITHUB_SETUP_NOW.md](GITHUB_SETUP_NOW.md)** for setup notes.
 
+### Automatic source ZIP on every push (mobile-friendly)
+
+This repo now includes a GitHub Actions workflow at **`.github/workflows/source-zip-on-push.yml`**.
+
+On every push, GitHub creates a downloadable ZIP artifact of the current commit.
+
+Quick mobile flow:
+
+1. Push your changes.
+2. Open your repo on GitHub → **Actions** → **Source ZIP on Push**.
+3. Open the latest run and download the artifact named like `source-<branch>-<sha>`.
+
 ---
 
 Flutter app (Android & iOS) for **Cursor Pro Cloud Agents** (tab: **Cloud Agents**), **My Private AIs** (local Ollama / ComfyUI), and **Capabilities** (automation tools + instruction manual).

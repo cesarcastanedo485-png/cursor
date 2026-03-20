@@ -31,6 +31,15 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   String? _launchedAgentId;
   String? _appliedPrefill;
 
+  void _clearLaunchDraft() {
+    _promptController.clear();
+    setState(() {
+      _imagePath = null;
+      _launchError = null;
+      _launchedAgentId = null;
+    });
+  }
+
   String _formatLaunchError(Object e) {
     if (e is DioException) {
       final code = e.response?.statusCode;
@@ -124,6 +133,8 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
       setState(() {
         _launching = false;
         _launchedAgentId = agentId;
+        _promptController.clear();
+        _imagePath = null;
       });
       if (agentId != null && agentId.isNotEmpty) {
         Navigator.pushNamed(context, AppRoutes.agentDetail, arguments: agentId);
@@ -139,6 +150,12 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(launchTabResetCounterProvider, (previous, next) {
+      if (previous != null && next > previous && mounted) {
+        _clearLaunchDraft();
+      }
+    });
+
     final private = ref.watch(appBackendModeProvider) == AppBackendMode.privateLocal;
     final pre = ref.watch(launchRepoPrefillProvider);
     if (!private && pre != null && pre.isNotEmpty && _appliedPrefill != pre) {
