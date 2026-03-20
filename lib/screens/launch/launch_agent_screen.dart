@@ -19,11 +19,14 @@ class LaunchAgentScreen extends ConsumerStatefulWidget {
   ConsumerState<LaunchAgentScreen> createState() => _LaunchAgentScreenState();
 }
 
+enum _LaunchIntent { ask, plan, debug }
+
 class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   final _repoController = TextEditingController();
   final _branchController = TextEditingController();
   final _promptController = TextEditingController();
   String _model = 'default';
+  _LaunchIntent _intent = _LaunchIntent.ask;
   bool _autoCreatePr = false;
   String? _imagePath;
   bool _launching = false;
@@ -118,9 +121,10 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     });
     final branch = _branchController.text.trim();
     final imageB64 = await _imageToBase64();
+    final effectivePrompt = _buildPromptForIntent(prompt);
     final request = LaunchRequest(
       repoUrl: repo,
-      prompt: prompt,
+      prompt: effectivePrompt,
       ref: branch.isEmpty ? null : branch,
       branchName: branch.isEmpty ? null : branch,
       model: _model,
@@ -145,6 +149,36 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
         _launching = false;
         _launchError = _formatLaunchError(e);
       });
+    }
+  }
+
+  String _buildPromptForIntent(String userPrompt) {
+    switch (_intent) {
+      case _LaunchIntent.ask:
+        return userPrompt;
+      case _LaunchIntent.plan:
+        return [
+          'Intent: Plan',
+          'First provide a concise implementation plan, then execute the work in ordered steps.',
+          userPrompt,
+        ].join('\n\n');
+      case _LaunchIntent.debug:
+        return [
+          'Intent: Debug',
+          'Treat this as a debugging task: reproduce the issue, identify root cause, explain findings, and apply the smallest safe fix with verification.',
+          userPrompt,
+        ].join('\n\n');
+    }
+  }
+
+  String _intentHelpText() {
+    switch (_intent) {
+      case _LaunchIntent.ask:
+        return 'General request. Best for normal coding or Q&A tasks.';
+      case _LaunchIntent.plan:
+        return 'Agent starts with an explicit plan before implementation.';
+      case _LaunchIntent.debug:
+        return 'Agent prioritizes root-cause analysis, minimal fix, and verification.';
     }
   }
 
@@ -227,6 +261,40 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
                 alignLabelWithHint: true,
               ),
               maxLines: 6,
+            ),
+            const SizedBox(height: 12),
+            Text('Intent', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            SegmentedButton<_LaunchIntent>(
+              segments: const [
+                ButtonSegment(
+                  value: _LaunchIntent.ask,
+                  label: Text('Ask'),
+                  icon: Icon(Icons.chat_bubble_outline_rounded),
+                ),
+                ButtonSegment(
+                  value: _LaunchIntent.plan,
+                  label: Text('Plan'),
+                  icon: Icon(Icons.route_rounded),
+                ),
+                ButtonSegment(
+                  value: _LaunchIntent.debug,
+                  label: Text('Debug'),
+                  icon: Icon(Icons.bug_report_rounded),
+                ),
+              ],
+              selected: {_intent},
+              onSelectionChanged: (selection) {
+                if (selection.isEmpty) return;
+                setState(() => _intent = selection.first);
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _intentHelpText(),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
             const SizedBox(height: 12),
             Row(

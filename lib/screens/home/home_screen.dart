@@ -12,8 +12,8 @@ import '../../../providers/shell_providers.dart';
 import '../../../data/models/private_ai_preset.dart';
 import '../../../providers/preferences_provider.dart';
 import '../private_ais/private_chat_screen.dart';
-import '../../widgets/agent_card.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/grouped_agents_list.dart';
 import '../../widgets/loading_skeleton.dart';
 
 /// Dashboard: recent agents (from API or cache if offline).
@@ -75,35 +75,23 @@ class HomeScreen extends ConsumerWidget {
             ),
           Expanded(
             child: agentsAsync.when(
-        data: (agents) {
-          if (agents.isEmpty) {
-            return _empty(context, ref, cacheAsync, cacheTs);
-          }
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(agentsListProvider),
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: agents.length,
-              itemBuilder: (context, i) {
-                final a = agents[i];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: AgentCard(
-                    agent: a,
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.agentDetail,
-                      arguments: a.id,
-                    ),
+              data: (agents) {
+                if (agents.isEmpty) {
+                  return _empty(context, ref, cacheAsync, cacheTs);
+                }
+                return GroupedAgentsList(
+                  agents: agents,
+                  onRefresh: () async => ref.invalidate(agentsListProvider),
+                  onAgentTap: (a) => Navigator.pushNamed(
+                    context,
+                    AppRoutes.agentDetail,
+                    arguments: a.id,
                   ),
                 );
               },
+              loading: () => _loadingOrCached(context, ref, cacheAsync, cacheTs),
+              error: (e, _) => _errorOrCached(context, ref, e, cacheAsync, cacheTs),
             ),
-          );
-        },
-        loading: () => _loadingOrCached(context, ref, cacheAsync, cacheTs),
-        error: (e, _) => _errorOrCached(context, ref, e, cacheAsync, cacheTs),
-      ),
           ),
         ],
       ),
@@ -155,32 +143,26 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _listFromCache(BuildContext context, WidgetRef ref, List<Agent> cached, AsyncValue<DateTime?> cacheTs) {
-    return RefreshIndicator(
+    final leading = <Widget>[
+      if (cacheTs.value != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Last updated: ${DateFormat.yMMMd().add_jm().format(cacheTs.value!.toLocal())}',
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+        ),
+    ];
+    return GroupedAgentsList(
+      agents: cached,
       onRefresh: () async => ref.invalidate(agentsListProvider),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (cacheTs.value != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Last updated: ${DateFormat.yMMMd().add_jm().format(cacheTs.value!.toLocal())}',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-              ),
-            ),
-          ...cached.map<Widget>((a) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AgentCard(
-                  agent: a,
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.agentDetail,
-                    arguments: a.id,
-                  ),
-                ),
-              )),
-        ],
+      onAgentTap: (a) => Navigator.pushNamed(
+        context,
+        AppRoutes.agentDetail,
+        arguments: a.id,
       ),
+      padding: const EdgeInsets.all(16),
+      leadingWidgets: leading,
     );
   }
 
