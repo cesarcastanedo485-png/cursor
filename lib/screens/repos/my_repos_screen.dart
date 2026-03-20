@@ -23,6 +23,8 @@ class MyReposScreen extends ConsumerStatefulWidget {
 
 class _MyReposScreenState extends ConsumerState<MyReposScreen> {
   final _search = TextEditingController();
+  bool _wasReposTabVisible = false;
+  bool _autoRefreshingOnTabEnter = false;
 
   @override
   void dispose() {
@@ -91,12 +93,29 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
     await ref.read(repositoriesProvider.notifier).forceApiRetry();
   }
 
+  void _maybeAutoRefreshOnTabEntry(bool isReposTabVisible, AsyncValue<List<CursorRepository>> async) {
+    if (isReposTabVisible && !_wasReposTabVisible && async.hasError && !_autoRefreshingOnTabEnter) {
+      _autoRefreshingOnTabEnter = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        try {
+          await _safeRefresh();
+        } finally {
+          _autoRefreshingOnTabEnter = false;
+        }
+      });
+    }
+    _wasReposTabVisible = isReposTabVisible;
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(repositoriesProvider);
+    final subTab = ref.watch(cloudAgentsSubTabProvider).clamp(0, 3);
     final manualRepos = ref.watch(manualReposProvider);
     final antiLoopMsg = ref.watch(reposAntiLoopMessageProvider);
     final q = _search.text.trim().toLowerCase();
+    _maybeAutoRefreshOnTabEntry(subTab == 2, async);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
