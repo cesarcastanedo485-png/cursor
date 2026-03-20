@@ -25,7 +25,6 @@ except ImportError:
     sys.exit(1)
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
-PORT = 8080
 
 
 def main():
@@ -42,22 +41,21 @@ def main():
             print("Both are required.")
             sys.exit(1)
 
-    redirect_uri = f"http://localhost:{PORT}/"
+    redirect_uri = "http://localhost:8765/"
     client_config = {
         "installed": {
             "client_id": client_id,
             "client_secret": client_secret,
-            "redirect_uris": [redirect_uri, "http://localhost"],
+            "redirect_uris": [redirect_uri],
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
         }
     }
 
-    print(f"Add this redirect URI to your OAuth client if needed: {redirect_uri}")
-    print("(Desktop app often has localhost already. Opening browser...)\n")
-
+    print("Opening browser for Google sign-in...")
+    print("If you get redirect_uri error: add http://localhost:8765/ to your OAuth client's redirect URIs.\n")
     flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-    creds = flow.run_local_server(port=PORT)
+    creds = flow.run_local_server(port=8765)
 
     if creds.refresh_token:
         print("\n" + "=" * 60)

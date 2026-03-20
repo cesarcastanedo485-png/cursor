@@ -31,31 +31,11 @@ Stored on-device with **flutter_secure_storage**. It is never written to the rep
 
 **Step-by-step:** See `docs/SETUP_DRIVE_APK.md`.
 
-The APK upload workflow supports three paths:
+The APK upload workflow uses OAuth to upload to your personal Drive folder. Set these secrets:
 
-1. **Service account + Shared Drive** (recommended for service accounts)
-   - Create a Shared Drive, add service account as member (Writer/Content manager).
-   - Create APKS folder inside the Shared Drive.
-   - Set `GDRIVE_SERVICE_ACCOUNT_JSON`, `GDRIVE_FOLDER_ID`, and optionally `GDRIVE_SHARED_DRIVE_ID`.
+- `GDRIVE_OAUTH_CLIENT_ID`
+- `GDRIVE_OAUTH_CLIENT_SECRET`
+- `GDRIVE_OAUTH_REFRESH_TOKEN`
+- `GDRIVE_FOLDER_ID`
 
-2. **OAuth user credentials** (real user storage quota)
-   - Set `GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`, and `GDRIVE_FOLDER_ID`.
-   - Use a folder accessible by that user account.
-
-Optional upload targeting:
-
-- `GDRIVE_TARGET_FILENAME`: force a stable file name in the folder (default: APK file basename).
-- `GDRIVE_TARGET_FILE_ID`: update an exact existing Drive file ID in the folder (preserves file ID/share link).
-
-Optional for Workspace admins:
-
-- **Domain-wide delegation impersonation** with service account:
-  set `GDRIVE_IMPERSONATED_USER` (user email) and ensure domain-wide delegation is configured in Google Workspace.
-
-Important: there is no separate paid "service account storage" quota. Shared Drive capacity comes from Workspace storage plans.
-
-Official docs:
-
-- Shared Drives + Drive API: https://developers.google.com/workspace/drive/api/guides/enable-shareddrives
-- OAuth 2.0 for Google APIs: https://developers.google.com/identity/protocols/oauth2
-- Domain-wide delegation: https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority
+Run `scripts/get_drive_refresh_token.py` locally to obtain the refresh token.

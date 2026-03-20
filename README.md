@@ -56,7 +56,7 @@ Automatic path (default):
 
 - Pushing to GitHub runs **`.github/workflows/apk_to_drive.yml`** on every branch.
 - The workflow builds the release APK in GitHub Actions and uploads it to your Drive folder using `GDRIVE_*` secrets.
-- Keep `GDRIVE_FOLDER_ID` plus either OAuth user secrets (`GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`) or `GDRIVE_SERVICE_ACCOUNT_JSON` configured in repo secrets.
+- Keep `GDRIVE_FOLDER_ID` plus OAuth secrets (`GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`) configured in repo secrets.
 
 To build the APK and get it on your phone via Google Drive:
 
