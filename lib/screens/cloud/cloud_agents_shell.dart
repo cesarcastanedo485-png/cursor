@@ -32,7 +32,12 @@ class CloudAgentsShell extends ConsumerWidget {
                 _Chip(
                   label: 'Launch',
                   selected: sub == 1,
-                  onTap: () => ref.read(cloudAgentsSubTabProvider.notifier).state = 1,
+                  onTap: () {
+                    if (sub != 1) {
+                      ref.read(launchTabResetCounterProvider.notifier).state++;
+                    }
+                    ref.read(cloudAgentsSubTabProvider.notifier).state = 1;
+                  },
                 ),
                 _Chip(
                   label: 'Repos',
