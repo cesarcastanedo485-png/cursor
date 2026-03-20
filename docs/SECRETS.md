@@ -44,6 +44,7 @@ Optional upload targeting:
 
 - `GDRIVE_TARGET_FILENAME`: force a stable file name in the folder (default: APK file basename).
 - `GDRIVE_TARGET_FILE_ID`: update an exact existing Drive file ID in the folder (preserves file ID/share link).
+  - Recommended when using a service account with a My Drive folder, to avoid new-file quota failures.
 
 Optional for Workspace admins:
 

@@ -83,6 +83,7 @@ jobs:
           GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
           GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
           GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
+          GDRIVE_TARGET_FILE_ID: ${{ secrets.GDRIVE_TARGET_FILE_ID }}
           APK_PATH: ${{ env.DRIVE_APK_PATH }}
           GDRIVE_TARGET_FILENAME: MordechaiusMaximus-install.apk
         run: |

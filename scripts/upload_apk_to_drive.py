@@ -146,6 +146,23 @@ def _pick_existing_target_file(service, folder_id: str, target_filename: str):
     return files[0] if files else None
 
 
+def _pick_any_existing_apk_file(service, folder_id: str):
+    response = (
+        service.files()
+        .list(
+            q=f"'{folder_id}' in parents and trashed = false and mimeType = 'application/vnd.android.package-archive'",
+            fields="files(id,name,modifiedTime,webViewLink,webContentLink)",
+            includeItemsFromAllDrives=True,
+            supportsAllDrives=True,
+            orderBy="modifiedTime desc",
+            pageSize=10,
+        )
+        .execute()
+    )
+    files = response.get("files", [])
+    return files[0] if files else None
+
+
 def _validate_folder_context(folder: dict, auth_mode: str, shared_drive_id: str) -> None:
     folder_mime = folder.get("mimeType")
     folder_drive_id = folder.get("driveId") or ""
@@ -198,6 +215,7 @@ def main() -> None:
 
     _validate_folder_context(folder, auth_mode, shared_drive_id)
     folder_drive_id = folder.get("driveId") or "My Drive"
+    folder_is_my_drive = folder_drive_id == "My Drive"
     print(f"Drive folder access OK: {folder.get('name')} ({folder.get('id')}) in {folder_drive_id}")
     print(f"Auth mode: {auth_mode}")
 
@@ -205,6 +223,15 @@ def main() -> None:
     file_metadata = {"name": target_filename, "parents": [folder_id]}
     media = MediaFileUpload(apk_path, mimetype="application/vnd.android.package-archive", resumable=True)
     existing_file = _pick_existing_target_file(service, folder_id, target_filename)
+    if not existing_file and auth_mode == "service_account" and folder_is_my_drive:
+        fallback_apk = _pick_any_existing_apk_file(service, folder_id)
+        if fallback_apk:
+            print(
+                "No exact target file found; reusing an existing APK file to avoid "
+                "service-account My Drive file-create quota limits."
+            )
+            existing_file = fallback_apk
+
     if existing_file:
         updated = (
             service.files()
@@ -224,16 +251,25 @@ def main() -> None:
         print(f"webContentLink={updated.get('webContentLink')}")
         return
 
-    created = (
-        service.files()
-        .create(
-            body=file_metadata,
-            media_body=media,
-            fields="id,name,webViewLink,webContentLink,parents,driveId",
-            supportsAllDrives=True,
+    try:
+        created = (
+            service.files()
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id,name,webViewLink,webContentLink,parents,driveId",
+                supportsAllDrives=True,
+            )
+            .execute()
         )
-        .execute()
-    )
+    except Exception as exc:
+        if auth_mode == "service_account" and folder_is_my_drive and "storageQuotaExceeded" in str(exc):
+            _fail(
+                "Google Drive rejected service-account file creation in My Drive (storageQuotaExceeded).\n"
+                "Set GDRIVE_TARGET_FILE_ID to an existing APK file in the folder, "
+                "or switch to Shared Drive/OAuth credentials."
+            )
+        raise
     print("Uploaded new APK to Google Drive:")
     print(f"id={created.get('id')}")
     print(f"name={created.get('name')}")
