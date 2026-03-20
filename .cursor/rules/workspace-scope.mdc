@@ -1,0 +1,18 @@
+---
+description: Mordechaius Maximus project scope — not the tarot app
+alwaysApply: true
+---
+
+# Workspace Scope: Mordechaius Maximus
+
+This workspace is **Mordechaius Maximus** (package: `mordechaius_maximus`, app ID: `com.mordechaius.maximus`).
+
+**Project location:** `C:\Users\cmc\cursor_mobile`
+
+**What it is:** Flutter app (Android & iOS) for Cursor Pro Cloud Agents, My Private AIs (Ollama/ComfyUI), and Capabilities (SMS, OBS, etc.). APK output: `MordechaiusMaximus-install.apk`.
+
+**Do NOT confuse with:**
+- The tarot card reading app (`Documents\tarrot`) — different project, different codebase
+- Generic "cursor mobile" — this is Mordechaius Maximus specifically
+
+When giving advice, configuration, or code changes, scope everything to Mordechaius Maximus and this `cursor_mobile` codebase only.

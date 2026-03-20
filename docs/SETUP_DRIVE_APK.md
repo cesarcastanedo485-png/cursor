@@ -49,14 +49,32 @@ Service accounts can write to Shared Drives when added as a member.
 
 Use your own Google account instead of a service account.
 
-1. Create OAuth 2.0 credentials in [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-2. Get a refresh token (requires a one-time OAuth flow).
-3. Set secrets:
-   - `GDRIVE_OAUTH_CLIENT_ID`
-   - `GDRIVE_OAUTH_CLIENT_SECRET`
-   - `GDRIVE_OAUTH_REFRESH_TOKEN`
-   - `GDRIVE_FOLDER_ID` (any folder in your My Drive)
-4. Set `GDRIVE_AUTH_MODE=oauth_user` or leave unset (script auto-detects).
+### Step 1: Create OAuth 2.0 credentials in Google Cloud Console
+
+1. Go to [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials).
+2. Click **Create Credentials** → **OAuth client ID**.
+3. If prompted, configure the OAuth consent screen (External user type is fine for personal use).
+4. **Application type:** Select **Desktop app**.
+   - *Why Desktop app?* The OAuth flow runs once on your PC to get a refresh token. GitHub Actions then uses that token server-side. Desktop app is designed for this "installed app / local auth" pattern. Android, Chrome extension, iOS, TV, and UWP are for their respective platforms—not for CI.
+5. **Name:** Use a descriptive name such as `Mordechaius Maximus - APK Drive Upload` or `MordechaiusMaximus-GitHub-Actions-Drive`. The code reads from GitHub secrets (`GDRIVE_OAUTH_CLIENT_ID`, etc.)—the display name is for your reference only.
+6. Click **Create**. Copy the **Client ID** and **Client Secret** for the next step.
+
+### Step 2: Get a refresh token (one-time OAuth flow)
+
+Run a one-time OAuth flow (e.g. using a Python script or [oauth2l](https://github.com/google/oauth2l)) to obtain a refresh token. Authorize with the Drive scope (`https://www.googleapis.com/auth/drive`).
+
+### Step 3: GitHub Secrets
+
+Set these in your repo (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|--------|
+| `GDRIVE_OAUTH_CLIENT_ID` | From Step 1 |
+| `GDRIVE_OAUTH_CLIENT_SECRET` | From Step 1 |
+| `GDRIVE_OAUTH_REFRESH_TOKEN` | From Step 2 |
+| `GDRIVE_FOLDER_ID` | Any folder ID in your My Drive |
+
+Optionally set `GDRIVE_AUTH_MODE=oauth_user` or leave unset (script auto-detects).
 
 ---
 
