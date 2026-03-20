@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mordechaius_maximus/app.dart';
 import 'package:mordechaius_maximus/data/local/secure_storage_service.dart';
 import 'package:mordechaius_maximus/providers/auth_provider.dart';
+import 'package:mordechaius_maximus/providers/backend_mode_provider.dart';
 import 'package:mordechaius_maximus/providers/private_chat_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +17,11 @@ class _FakeSecureStorage extends SecureStorageService {
 
   @override
   Future<String?> getApiKey() async => null;
+}
+
+class _FakeBackendStateNotifier extends StateNotifier<BackendState> {
+  _FakeBackendStateNotifier()
+      : super(const BackendState(mode: AppBackendMode.privateLocal, activePrivateAiId: 'llm'));
 }
 
 void main() {
@@ -40,6 +46,7 @@ void main() {
         overrides: [
           privateChatBoxProvider.overrideWithValue(box),
           secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
+          backendStateProvider.overrideWith((ref) => _FakeBackendStateNotifier()),
         ],
         child: const App(),
       ),
