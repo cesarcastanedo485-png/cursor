@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/agent_intent.dart';
 import '../../../core/constants.dart';
 import '../../../data/models/launch_request.dart';
 import '../../../providers/agents_provider.dart';
@@ -19,14 +20,12 @@ class LaunchAgentScreen extends ConsumerStatefulWidget {
   ConsumerState<LaunchAgentScreen> createState() => _LaunchAgentScreenState();
 }
 
-enum _LaunchIntent { ask, plan, debug }
-
 class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   final _repoController = TextEditingController();
   final _branchController = TextEditingController();
   final _promptController = TextEditingController();
   String _model = 'default';
-  _LaunchIntent _intent = _LaunchIntent.ask;
+  AgentIntent _intent = AgentIntent.ask;
   bool _autoCreatePr = false;
   String? _imagePath;
   bool _launching = false;
@@ -37,6 +36,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   void _clearLaunchDraft() {
     _promptController.clear();
     setState(() {
+      _intent = AgentIntent.ask;
       _imagePath = null;
       _launchError = null;
       _launchedAgentId = null;
@@ -121,7 +121,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     });
     final branch = _branchController.text.trim();
     final imageB64 = await _imageToBase64();
-    final effectivePrompt = _buildPromptForIntent(prompt);
+    final effectivePrompt = buildPromptForIntent(_intent, prompt);
     final request = LaunchRequest(
       repoUrl: repo,
       prompt: effectivePrompt,
@@ -152,36 +152,6 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     }
   }
 
-  String _buildPromptForIntent(String userPrompt) {
-    switch (_intent) {
-      case _LaunchIntent.ask:
-        return userPrompt;
-      case _LaunchIntent.plan:
-        return [
-          'Intent: Plan',
-          'First provide a concise implementation plan, then execute the work in ordered steps.',
-          userPrompt,
-        ].join('\n\n');
-      case _LaunchIntent.debug:
-        return [
-          'Intent: Debug',
-          'Treat this as a debugging task: reproduce the issue, identify root cause, explain findings, and apply the smallest safe fix with verification.',
-          userPrompt,
-        ].join('\n\n');
-    }
-  }
-
-  String _intentHelpText() {
-    switch (_intent) {
-      case _LaunchIntent.ask:
-        return 'General request. Best for normal coding or Q&A tasks.';
-      case _LaunchIntent.plan:
-        return 'Agent starts with an explicit plan before implementation.';
-      case _LaunchIntent.debug:
-        return 'Agent prioritizes root-cause analysis, minimal fix, and verification.';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.listen<int>(launchTabResetCounterProvider, (previous, next) {
@@ -192,11 +162,18 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
 
     final private = ref.watch(appBackendModeProvider) == AppBackendMode.privateLocal;
     final pre = ref.watch(launchRepoPrefillProvider);
+    final intentPrefill = ref.watch(launchIntentPrefillProvider);
     if (!private && pre != null && pre.isNotEmpty && _appliedPrefill != pre) {
       _appliedPrefill = pre;
       _repoController.text = pre;
       Future.microtask(() {
         if (mounted) ref.read(launchRepoPrefillProvider.notifier).state = null;
+      });
+    }
+    if (!private && intentPrefill != null && _intent != intentPrefill) {
+      _intent = intentPrefill;
+      Future.microtask(() {
+        if (mounted) ref.read(launchIntentPrefillProvider.notifier).state = null;
       });
     }
 
@@ -265,20 +242,20 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             const SizedBox(height: 12),
             Text('Intent', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
-            SegmentedButton<_LaunchIntent>(
+            SegmentedButton<AgentIntent>(
               segments: const [
                 ButtonSegment(
-                  value: _LaunchIntent.ask,
+                  value: AgentIntent.ask,
                   label: Text('Ask'),
                   icon: Icon(Icons.chat_bubble_outline_rounded),
                 ),
                 ButtonSegment(
-                  value: _LaunchIntent.plan,
+                  value: AgentIntent.plan,
                   label: Text('Plan'),
                   icon: Icon(Icons.route_rounded),
                 ),
                 ButtonSegment(
-                  value: _LaunchIntent.debug,
+                  value: AgentIntent.debug,
                   label: Text('Debug'),
                   icon: Icon(Icons.bug_report_rounded),
                 ),
@@ -291,7 +268,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _intentHelpText(),
+              _intent.shortDescription,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
