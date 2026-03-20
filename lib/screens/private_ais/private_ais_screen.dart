@@ -25,18 +25,18 @@ class _PrivateAisScreenState extends ConsumerState<PrivateAisScreen> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => PopScope(
+      builder: (ctx) => const PopScope(
         canPop: false,
         child: AlertDialog(
           content: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Text('Connecting…'),
             ],
           ),

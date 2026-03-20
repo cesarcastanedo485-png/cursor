@@ -80,7 +80,7 @@ class _SkeletonCardState extends State<_SkeletonCard>
       width: w,
       height: h,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(opacity * 0.2),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: opacity * 0.2),
         borderRadius: BorderRadius.circular(4),
       ),
     );

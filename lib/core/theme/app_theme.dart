@@ -7,7 +7,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         surface: AppColors.darkSurface,
         surfaceContainerHighest: AppColors.darkSurfaceVariant,
         primary: AppColors.darkPrimary,
@@ -72,7 +72,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         surface: AppColors.lightSurface,
         surfaceContainerHighest: AppColors.lightSurfaceVariant,
         primary: AppColors.lightPrimary,

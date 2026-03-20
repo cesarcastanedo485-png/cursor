@@ -66,17 +66,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     setState(() {
       _testing = false;
-      _testResult = err == null ? 'Connection successful!' : err;
+      _testResult = err ?? 'Connection successful!';
     });
   }
 
   Future<void> _openHelp() async {
     final uri = Uri.parse(apiKeyHelpUrl);
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Future<void> _openGithubDashboard() async {
-    final uri = Uri.parse('https://github.com/settings/applications');
     if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 

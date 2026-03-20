@@ -64,7 +64,7 @@ class MockPrivateAiServer {
         if (path == '/v1/images/generations' ||
             path == '/v1/images/generations/') {
           final body = await utf8.decodeStream(req);
-          final data = jsonDecode(body) as Map<String, dynamic>?;
+          jsonDecode(body) as Map<String, dynamic>?;
           _sendJson(res, 200, {
             'data': [
               {

@@ -33,6 +33,7 @@ class SecureStorageService implements CapabilityConfigProvider {
       _storage.write(key: _keyOnboardingDone, value: value.toString());
 
   /// Capability config (API key, webhook URL, folder path) per capability id.
+  @override
   Future<CapabilityConfig?> getCapabilityConfig(String capabilityId) async {
     final raw = await _storage.read(key: '$_keyCapabilityPrefix$capabilityId');
     if (raw == null || raw.isEmpty) return null;
