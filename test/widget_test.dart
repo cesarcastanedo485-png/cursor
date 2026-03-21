@@ -10,6 +10,8 @@ import 'package:mordechaius_maximus/providers/auth_provider.dart';
 import 'package:mordechaius_maximus/providers/backend_mode_provider.dart';
 import 'package:mordechaius_maximus/providers/private_chat_provider.dart';
 import 'package:mordechaius_maximus/providers/theme_provider.dart';
+import 'package:mordechaius_maximus/data/local/preferences_service.dart';
+import 'package:mordechaius_maximus/providers/preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeSecureStorage extends SecureStorageService {
@@ -39,6 +41,8 @@ void main() {
       'app_backend_mode': 'private',
       'active_private_ai_id': 'llm',
     });
+    final prefs = await SharedPreferences.getInstance();
+    final preferences = PreferencesService(prefs);
 
     final dir = await Directory.systemTemp.createTemp('mm_wt');
     Hive.init(dir.path);
@@ -53,6 +57,7 @@ void main() {
         overrides: [
           privateChatBoxProvider.overrideWithValue(box),
           secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
+          preferencesProvider.overrideWith((ref) => Future.value(preferences)),
           backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
           onboardingStateProvider.overrideWith((ref) => _LoadingOnboardingNotifier(_FakeSecureStorage())),
           themeModeProvider.overrideWith((ref) => _TestThemeNotifier()),
