@@ -9,6 +9,7 @@ import 'package:mordechaius_maximus/data/local/secure_storage_service.dart';
 import 'package:mordechaius_maximus/providers/auth_provider.dart';
 import 'package:mordechaius_maximus/providers/backend_mode_provider.dart';
 import 'package:mordechaius_maximus/providers/private_chat_provider.dart';
+import 'package:mordechaius_maximus/providers/theme_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeSecureStorage extends SecureStorageService {
@@ -17,6 +18,27 @@ class _FakeSecureStorage extends SecureStorageService {
 
   @override
   Future<String?> getApiKey() async => null;
+}
+
+/// Keeps onboarding in loading state so we only verify MaterialApp builds
+/// without building the full main shell.
+class _LoadingOnboardingNotifier extends OnboardingStateNotifier {
+  _LoadingOnboardingNotifier(SecureStorageService storage) : super(storage);
+
+  @override
+  Future<void> _load() async {
+    // No-op.
+  }
+}
+
+/// Static theme; skips SharedPreferences to avoid CI timing issues.
+class _TestThemeNotifier extends ThemeModeNotifier {
+  _TestThemeNotifier() : super();
+
+  @override
+  Future<void> _load() async {
+    // No-op.
+  }
 }
 
 void main() {
@@ -42,12 +64,13 @@ void main() {
           privateChatBoxProvider.overrideWithValue(box),
           secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
           backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
+          onboardingStateProvider.overrideWith((ref) => _LoadingOnboardingNotifier(_FakeSecureStorage())),
+          themeModeProvider.overrideWith((ref) => _TestThemeNotifier()),
         ],
         child: const App(),
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
