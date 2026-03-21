@@ -24,8 +24,8 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   final _repoController = TextEditingController();
   final _branchController = TextEditingController();
   final _promptController = TextEditingController();
-  String _model = 'default';
-  AgentIntent _intent = AgentIntent.ask;
+  String _model = 'auto';
+  AgentIntent _intent = AgentIntent.normal;
   bool _autoCreatePr = false;
   String? _imagePath;
   bool _launching = false;
@@ -36,7 +36,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   void _clearLaunchDraft() {
     _promptController.clear();
     setState(() {
-      _intent = AgentIntent.ask;
+      _intent = AgentIntent.normal;
       _imagePath = null;
       _launchError = null;
       _launchedAgentId = null;
@@ -55,7 +55,8 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     return e.toString();
   }
 
-  static const _models = ['default', 'claude-4-sonnet', 'claude-4-opus', 'gpt-4o'];
+  // auto = Cursor's default (cost-efficient). Avoid expensive models for simple requests.
+  static const _models = ['auto', 'claude-4-sonnet', 'claude-4-opus', 'gpt-4o-mini'];
 
   @override
   void dispose() {
@@ -245,6 +246,11 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             SegmentedButton<AgentIntent>(
               segments: const [
                 ButtonSegment(
+                  value: AgentIntent.normal,
+                  label: Text('Launch'),
+                  icon: Icon(Icons.rocket_launch_rounded),
+                ),
+                ButtonSegment(
                   value: AgentIntent.ask,
                   label: Text('Ask'),
                   icon: Icon(Icons.chat_bubble_outline_rounded),
@@ -303,10 +309,10 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             Text('Model', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: _model,
+              value: _model,
               decoration: const InputDecoration(),
               items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-              onChanged: (v) => setState(() => _model = v ?? 'default'),
+              onChanged: (v) => setState(() => _model = v ?? 'auto'),
             ),
             const SizedBox(height: 12),
             SwitchListTile(

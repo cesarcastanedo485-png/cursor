@@ -1,9 +1,12 @@
 /// User-selectable intent presets for agent prompts and follow-ups.
-enum AgentIntent { ask, plan, debug }
+/// "normal" = launch as-is, no wrapper. Ask/Plan/Debug add explicit instructions.
+enum AgentIntent { normal, ask, plan, debug }
 
 extension AgentIntentX on AgentIntent {
   String get label {
     switch (this) {
+      case AgentIntent.normal:
+        return 'Launch';
       case AgentIntent.ask:
         return 'Ask';
       case AgentIntent.plan:
@@ -15,6 +18,8 @@ extension AgentIntentX on AgentIntent {
 
   String get shortDescription {
     switch (this) {
+      case AgentIntent.normal:
+        return 'Launch the agent with your prompt as-is. No extra instructions.';
       case AgentIntent.ask:
         return 'General request. Best for normal coding or Q&A tasks.';
       case AgentIntent.plan:
@@ -26,8 +31,10 @@ extension AgentIntentX on AgentIntent {
 }
 
 /// Adds intent instructions without requiring backend schema changes.
+/// "normal" and "ask" both send the raw prompt.
 String buildPromptForIntent(AgentIntent intent, String userPrompt) {
   switch (intent) {
+    case AgentIntent.normal:
     case AgentIntent.ask:
       return userPrompt;
     case AgentIntent.plan:

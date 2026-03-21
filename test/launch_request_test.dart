@@ -41,5 +41,21 @@ void main() {
       final target = json['target'] as Map<String, dynamic>;
       expect(target['autoCreatePr'], isTrue);
     });
+
+    test('omits model when auto or default (cost-efficient)', () {
+      const requestAuto = LaunchRequest(
+        repoUrl: 'https://github.com/example/repo',
+        prompt: 'Fix bug',
+        model: 'auto',
+      );
+      expect(requestAuto.toJson().containsKey('model'), isFalse);
+
+      const requestDefault = LaunchRequest(
+        repoUrl: 'https://github.com/example/repo',
+        prompt: 'Fix bug',
+        model: 'default',
+      );
+      expect(requestDefault.toJson().containsKey('model'), isFalse);
+    });
   });
 }

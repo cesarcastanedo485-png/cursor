@@ -49,6 +49,12 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.rocket_launch_rounded),
+              title: const Text('Launch'),
+              subtitle: Text(AgentIntent.normal.shortDescription),
+              onTap: () => Navigator.of(ctx).pop(AgentIntent.normal),
+            ),
+            ListTile(
               leading: const Icon(Icons.chat_bubble_outline_rounded),
               title: const Text('Ask'),
               subtitle: Text(AgentIntent.ask.shortDescription),
@@ -72,6 +78,11 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
     );
     if (selected == null || !mounted) return;
     _launchOnRepo(url, selected);
+  }
+
+  /// Quick launch: skip intent picker, use Launch (normal) with default model.
+  void _quickLaunchOnRepo(String url) {
+    _launchOnRepo(url, AgentIntent.normal);
   }
 
   void _showAddRepoDialog() {
@@ -260,7 +271,8 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
                       final isManual = manualRepos.any((m) => m.repoUrl == repo.repoUrl);
                       return _RepoCard(
                         repo: repo,
-                        onLaunch: () => _pickLaunchIntentAndGo(repo.repoUrl),
+                        onLaunch: () => _quickLaunchOnRepo(repo.repoUrl),
+                        onLaunchWithIntent: () => _pickLaunchIntentAndGo(repo.repoUrl),
                         isManual: isManual,
                         onRemove: isManual
                             ? () => ref.read(manualReposProvider.notifier).removeUrl(repo.repoUrl)
@@ -288,7 +300,8 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (_, i) => _RepoCard(
                           repo: manualRepos[i],
-                          onLaunch: () => _pickLaunchIntentAndGo(manualRepos[i].repoUrl),
+                          onLaunch: () => _quickLaunchOnRepo(manualRepos[i].repoUrl),
+                          onLaunchWithIntent: () => _pickLaunchIntentAndGo(manualRepos[i].repoUrl),
                           isManual: true,
                           onRemove: () => ref.read(manualReposProvider.notifier).removeUrl(manualRepos[i].repoUrl),
                         ),
@@ -348,7 +361,8 @@ class _MyReposScreenState extends ConsumerState<MyReposScreen> {
                           itemCount: manualRepos.length,
                           itemBuilder: (context, i) => _RepoCard(
                             repo: manualRepos[i],
-                            onLaunch: () => _pickLaunchIntentAndGo(manualRepos[i].repoUrl),
+                            onLaunch: () => _quickLaunchOnRepo(manualRepos[i].repoUrl),
+                            onLaunchWithIntent: () => _pickLaunchIntentAndGo(manualRepos[i].repoUrl),
                             isManual: true,
                             onRemove: () => ref.read(manualReposProvider.notifier).removeUrl(manualRepos[i].repoUrl),
                           ),
@@ -369,12 +383,14 @@ class _RepoCard extends StatelessWidget {
   const _RepoCard({
     required this.repo,
     required this.onLaunch,
+    this.onLaunchWithIntent,
     this.isManual = false,
     this.onRemove,
   });
 
   final CursorRepository repo;
   final VoidCallback onLaunch;
+  final VoidCallback? onLaunchWithIntent;
   final bool isManual;
   final VoidCallback? onRemove;
 
@@ -433,10 +449,24 @@ class _RepoCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onLaunch,
-              icon: const Icon(Icons.rocket_launch_rounded, size: 22),
-              label: const Text('Launch Agent (Ask/Plan/Debug)'),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: onLaunch,
+                    icon: const Icon(Icons.rocket_launch_rounded, size: 22),
+                    label: const Text('Launch'),
+                  ),
+                ),
+                if (onLaunchWithIntent != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: onLaunchWithIntent,
+                    icon: const Icon(Icons.tune_rounded),
+                    tooltip: 'Launch with intent (Ask/Plan/Debug)',
+                  ),
+                ],
+              ],
             ),
           ],
         ),

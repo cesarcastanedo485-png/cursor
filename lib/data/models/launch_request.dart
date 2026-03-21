@@ -50,8 +50,9 @@ class LaunchRequest {
       if (branchName != null && branchName!.isNotEmpty) 'branchName': branchName,
     };
 
+    // "auto" and "default" = omit so Cursor uses cost-efficient default. Never use expensive models for simple requests.
     final chosenModel = (model ?? '').trim();
-    if (chosenModel.isNotEmpty && chosenModel != 'default') {
+    if (chosenModel.isNotEmpty && chosenModel != 'default' && chosenModel != 'auto') {
       map['model'] = chosenModel;
     }
 
