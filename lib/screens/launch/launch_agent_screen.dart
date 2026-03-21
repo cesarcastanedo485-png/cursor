@@ -309,7 +309,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             Text('Model', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _model,
+              initialValue: _model,
               decoration: const InputDecoration(),
               items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
               onChanged: (v) => setState(() => _model = v ?? 'auto'),

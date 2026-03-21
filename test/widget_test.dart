@@ -23,22 +23,12 @@ class _FakeSecureStorage extends SecureStorageService {
 /// Keeps onboarding in loading state so we only verify MaterialApp builds
 /// without building the full main shell.
 class _LoadingOnboardingNotifier extends OnboardingStateNotifier {
-  _LoadingOnboardingNotifier(SecureStorageService storage) : super(storage);
-
-  @override
-  Future<void> _load() async {
-    // No-op.
-  }
+  _LoadingOnboardingNotifier(super.storage) : super(skipInitialLoad: true);
 }
 
 /// Static theme; skips SharedPreferences to avoid CI timing issues.
 class _TestThemeNotifier extends ThemeModeNotifier {
-  _TestThemeNotifier() : super();
-
-  @override
-  Future<void> _load() async {
-    // No-op.
-  }
+  _TestThemeNotifier() : super(skipInitialLoad: true);
 }
 
 void main() {

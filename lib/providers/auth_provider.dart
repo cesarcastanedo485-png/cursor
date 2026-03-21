@@ -98,12 +98,13 @@ final isApiConfiguredProvider = Provider<bool>((ref) {
 /// Whether user has completed onboarding (has key saved and proceeded).
 final onboardingStateProvider = StateNotifierProvider<OnboardingStateNotifier, AsyncValue<bool>>((ref) {
   final storage = ref.watch(secureStorageProvider);
-  return OnboardingStateNotifier(storage);
+  return OnboardingStateNotifier(storage, skipInitialLoad: false);
 });
 
 class OnboardingStateNotifier extends StateNotifier<AsyncValue<bool>> {
-  OnboardingStateNotifier(this._storage) : super(const AsyncValue.loading()) {
-    _load();
+  OnboardingStateNotifier(this._storage, {bool skipInitialLoad = false})
+      : super(const AsyncValue.loading()) {
+    if (!skipInitialLoad) _load();
   }
   final SecureStorageService _storage;
 

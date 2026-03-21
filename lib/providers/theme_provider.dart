@@ -5,12 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 const String _keyDarkMode = 'cursor_mobile_dark_mode';
 
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
-  return ThemeModeNotifier();
+  return ThemeModeNotifier(skipInitialLoad: false);
 });
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.dark) {
-    _load();
+  ThemeModeNotifier({bool skipInitialLoad = false}) : super(ThemeMode.dark) {
+    if (!skipInitialLoad) _load();
   }
 
   Future<void> _load() async {
