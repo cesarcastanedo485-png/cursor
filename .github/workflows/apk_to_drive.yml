@@ -175,5 +175,5 @@ jobs:
           APK_PATH: ${{ env.DRIVE_APK_PATH }}
           GDRIVE_TARGET_FILENAME: MordechaiusMaximus-install.apk
         run: |
-          pip install --quiet google-api-python-client google-auth google-auth-httplib2
+          pip install --quiet -r requirements.txt
           python scripts/upload_apk_to_drive.py
