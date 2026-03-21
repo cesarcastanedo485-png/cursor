@@ -78,11 +78,13 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = status.toLowerCase() == 'running'
+    final color = Agent.isRunningStatus(status) || Agent.isPendingStatus(status)
         ? AppColors.statusRunning
-        : status.toLowerCase() == 'finished'
+        : Agent.isFinishedStatus(status)
             ? AppColors.statusFinished
-            : AppColors.statusFailed;
+            : Agent.isFailedStatus(status)
+                ? AppColors.statusFailed
+                : Theme.of(context).colorScheme.outline;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

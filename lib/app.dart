@@ -72,6 +72,8 @@ class _MainShellWithBottomNav extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(mainShellTabProvider).clamp(0, 2);
+    // Start API-key hydration early so first cloud tab load does not flash auth errors.
+    ref.watch(apiBootstrapProvider);
 
     return Scaffold(
       body: Column(

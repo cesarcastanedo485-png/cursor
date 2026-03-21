@@ -14,6 +14,7 @@ final agentsListProvider = FutureProvider.autoDispose<List<Agent>>((ref) async {
   if (mode == AppBackendMode.privateLocal) {
     return cache.getCachedAgents();
   }
+  await ref.watch(apiBootstrapProvider.future);
   final api = ref.watch(apiServiceProvider);
   final list = await api.getAgents();
   if (list.isNotEmpty) await cache.saveAgents(list);
@@ -23,6 +24,7 @@ final agentsListProvider = FutureProvider.autoDispose<List<Agent>>((ref) async {
 /// Single agent by ID (for detail screen). Polling can be done by ref.invalidate.
 final agentDetailProvider = FutureProvider.autoDispose.family<Agent?, String>((ref, id) async {
   if (id.isEmpty) return null;
+  await ref.watch(apiBootstrapProvider.future);
   final api = ref.watch(apiServiceProvider);
   return api.getAgent(id);
 });
@@ -30,6 +32,7 @@ final agentDetailProvider = FutureProvider.autoDispose.family<Agent?, String>((r
 /// Conversation for an agent.
 final conversationProvider = FutureProvider.autoDispose.family<Conversation, String>((ref, agentId) async {
   if (agentId.isEmpty) return const Conversation(messages: []);
+  await ref.watch(apiBootstrapProvider.future);
   final api = ref.watch(apiServiceProvider);
   return api.getConversation(agentId);
 });
@@ -37,12 +40,14 @@ final conversationProvider = FutureProvider.autoDispose.family<Conversation, Str
 /// Artifacts for an agent.
 final artifactsProvider = FutureProvider.autoDispose.family<List<Artifact>, String>((ref, agentId) async {
   if (agentId.isEmpty) return [];
+  await ref.watch(apiBootstrapProvider.future);
   final api = ref.watch(apiServiceProvider);
   return api.getArtifacts(agentId);
 });
 
 /// Launch agent: POST /v0/agents. Returns agent ID on success.
 final launchAgentProvider = FutureProvider.autoDispose.family<String?, LaunchRequest>((ref, request) async {
+  await ref.watch(apiBootstrapProvider.future);
   final api = ref.watch(apiServiceProvider);
   final res = await api.launchAgent(request);
   ref.invalidate(agentsListProvider);

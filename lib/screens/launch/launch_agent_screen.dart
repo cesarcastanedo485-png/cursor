@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/agent_intent.dart';
 import '../../../core/constants.dart';
 import '../../../data/models/launch_request.dart';
 import '../../../providers/agents_provider.dart';
@@ -24,6 +25,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   final _branchController = TextEditingController();
   final _promptController = TextEditingController();
   String _model = 'default';
+  AgentIntent _intent = AgentIntent.ask;
   bool _autoCreatePr = false;
   String? _imagePath;
   bool _launching = false;
@@ -34,6 +36,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   void _clearLaunchDraft() {
     _promptController.clear();
     setState(() {
+      _intent = AgentIntent.ask;
       _imagePath = null;
       _launchError = null;
       _launchedAgentId = null;
@@ -118,9 +121,10 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     });
     final branch = _branchController.text.trim();
     final imageB64 = await _imageToBase64();
+    final effectivePrompt = buildPromptForIntent(_intent, prompt);
     final request = LaunchRequest(
       repoUrl: repo,
-      prompt: prompt,
+      prompt: effectivePrompt,
       ref: branch.isEmpty ? null : branch,
       branchName: branch.isEmpty ? null : branch,
       model: _model,
@@ -158,11 +162,18 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
 
     final private = ref.watch(appBackendModeProvider) == AppBackendMode.privateLocal;
     final pre = ref.watch(launchRepoPrefillProvider);
+    final intentPrefill = ref.watch(launchIntentPrefillProvider);
     if (!private && pre != null && pre.isNotEmpty && _appliedPrefill != pre) {
       _appliedPrefill = pre;
       _repoController.text = pre;
       Future.microtask(() {
         if (mounted) ref.read(launchRepoPrefillProvider.notifier).state = null;
+      });
+    }
+    if (!private && intentPrefill != null && _intent != intentPrefill) {
+      _intent = intentPrefill;
+      Future.microtask(() {
+        if (mounted) ref.read(launchIntentPrefillProvider.notifier).state = null;
       });
     }
 
@@ -229,6 +240,40 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
               maxLines: 6,
             ),
             const SizedBox(height: 12),
+            Text('Intent', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            SegmentedButton<AgentIntent>(
+              segments: const [
+                ButtonSegment(
+                  value: AgentIntent.ask,
+                  label: Text('Ask'),
+                  icon: Icon(Icons.chat_bubble_outline_rounded),
+                ),
+                ButtonSegment(
+                  value: AgentIntent.plan,
+                  label: Text('Plan'),
+                  icon: Icon(Icons.route_rounded),
+                ),
+                ButtonSegment(
+                  value: AgentIntent.debug,
+                  label: Text('Debug'),
+                  icon: Icon(Icons.bug_report_rounded),
+                ),
+              ],
+              selected: {_intent},
+              onSelectionChanged: (selection) {
+                if (selection.isEmpty) return;
+                setState(() => _intent = selection.first);
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _intent.shortDescription,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 TextButton.icon(
@@ -267,7 +312,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             SwitchListTile(
               title: const Text('Create pull request when done'),
               subtitle: const Text(
-                'PR = pull request: open a proposed change on GitHub for review before merging.',
+                'PR = pull request. Off by default; only enabled when this switch is on.',
               ),
               value: _autoCreatePr,
               onChanged: (v) => setState(() => _autoCreatePr = v),
