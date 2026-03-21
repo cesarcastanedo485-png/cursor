@@ -312,7 +312,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
             SwitchListTile(
               title: const Text('Create pull request when done'),
               subtitle: const Text(
-                'PR = pull request: open a proposed change on GitHub for review before merging.',
+                'PR = pull request. Off by default; only enabled when this switch is on.',
               ),
               value: _autoCreatePr,
               onChanged: (v) => setState(() => _autoCreatePr = v),

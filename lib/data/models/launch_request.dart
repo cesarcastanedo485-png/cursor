@@ -43,15 +43,12 @@ class LaunchRequest {
       },
     };
 
-    // Only include `target` when it has meaning. Cursor's API treats `target`
-    // as optional; sending `autoCreatePr: false` may be rejected in some cases.
-    final wantsTarget = autoCreatePr || (branchName != null && branchName!.isNotEmpty);
-    if (wantsTarget) {
-      map['target'] = <String, dynamic>{
-        'autoCreatePr': autoCreatePr,
-        if (branchName != null && branchName!.isNotEmpty) 'branchName': branchName,
-      };
-    }
+    // Always send explicit PR intent so backend defaults cannot create a PR
+    // when the user has not enabled that option.
+    map['target'] = <String, dynamic>{
+      'autoCreatePr': autoCreatePr,
+      if (branchName != null && branchName!.isNotEmpty) 'branchName': branchName,
+    };
 
     final chosenModel = (model ?? '').trim();
     if (chosenModel.isNotEmpty && chosenModel != 'default') {
