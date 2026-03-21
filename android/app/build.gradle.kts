@@ -14,6 +14,15 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// When keystore password is wrong, add useDebugSigningForRelease=true to android/local.properties
+// to build release APK with debug signing (local testing only; CI uses secrets).
+val localPropertiesFile = file("${project.projectDir.parent}/local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+val useDebugSigningForRelease = localProperties.getProperty("useDebugSigningForRelease", "false") == "true"
+
 android {
     namespace = "com.mordechaius.maximus"
     compileSdk = flutter.compileSdkVersion
@@ -51,7 +60,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (!useDebugSigningForRelease && keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

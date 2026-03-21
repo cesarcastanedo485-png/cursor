@@ -19,6 +19,7 @@ abstract class AppRoutes {
   static const String agents = '/agents';
   static const String agentDetail = '/agent';
   static const String settings = '/settings';
+  static const String about = '/about';
 }
 
 /// Cache key for last agents list (offline).

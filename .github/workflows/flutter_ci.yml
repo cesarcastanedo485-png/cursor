@@ -18,16 +18,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: CI diagnostics (easy to spot in logs)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=========================================="
+          echo "  Mordechaius Maximus — Flutter CI header"
+          echo "=========================================="
+          echo "PWD=$(pwd)"
+          echo "Top-level files:"
+          ls -la
+          echo "--- pubspec version line ---"
+          grep -E '^version:' pubspec.yaml || true
+          echo "--- end header ---"
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
+      - name: Flutter toolchain
+        run: |
+          echo "=== flutter --version ==="
+          flutter --version
+          echo "=== dart --version ==="
+          dart --version
+
       - name: Pub get
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: |
+          echo "=== flutter analyze (fails this job on any issue) ==="
+          flutter analyze
+          echo "=== analyze OK ==="
 
       - name: Test
-        run: flutter test
+        run: |
+          echo "=== flutter test ==="
+          flutter test
+          echo "=== tests OK ==="

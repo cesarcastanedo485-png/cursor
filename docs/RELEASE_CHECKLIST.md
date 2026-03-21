@@ -15,6 +15,7 @@
 
 - [ ] `flutter analyze` — no issues
 - [ ] `flutter test` — all green
+- [ ] **APK log:** append a new top entry in `lib/core/apk_release_log.dart` matching the new `pubspec.yaml` `version:` (so Settings → About stays accurate)
 - [ ] Optional: `.\scripts\pre_push.ps1` (same as above)
 
 ## Signing & secrets

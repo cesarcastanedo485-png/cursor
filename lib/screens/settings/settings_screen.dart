@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/app_strings.dart';
 import '../../../core/constants.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/backend_mode_provider.dart';
@@ -24,6 +26,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _ollamaPort = TextEditingController();
   final _comfyPort = TextEditingController();
   bool _prefsLoaded = false;
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPackageInfo());
+  }
+
+  Future<void> _loadPackageInfo() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _packageInfo = info);
+    } catch (_) {
+      // Web/desktop edge cases — footer falls back to app name only.
+    }
+  }
 
   @override
   void dispose() {
@@ -278,6 +296,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const Divider(),
                 ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: const Text('About'),
+                  subtitle: const Text('Version & APK change log'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.about),
+                ),
+                const Divider(),
+                ListTile(
                   leading: const Icon(Icons.logout_rounded),
                   title: const Text('Reset API key & onboarding'),
                   onTap: _resetOnboarding,
@@ -285,7 +311,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 24),
                 Center(
                   child: Text(
-                    'Mordechaius Maximus v2.0.2',
+                    _packageInfo == null
+                        ? AppStrings.appName
+                        : '${AppStrings.appName} v${_packageInfo!.version} (build ${_packageInfo!.buildNumber})',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
