@@ -34,6 +34,16 @@ class ApkReleaseEntry {
 /// Newest APK first.
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
+    versionLabel: '2.0.5',
+    buildNumber: 15,
+    released: '2026-03-20',
+    changes: [
+      'API: 503 retry with exponential backoff; improved 400/503/timeout error messages.',
+      'API: sendMessage validation; legacy endpoint fallback only on 404/405.',
+      'Tests: BackendStateNotifier provider override type fix.',
+    ],
+  ),
+  ApkReleaseEntry(
     versionLabel: '2.0.4',
     buildNumber: 14,
     released: '2026-03-20',

@@ -23,11 +23,6 @@ class _FakeSecureStorage extends SecureStorageService {
   Future<String?> getApiKey() async => null;
 }
 
-class _FakeBackendStateNotifier extends StateNotifier<BackendState> {
-  _FakeBackendStateNotifier()
-      : super(const BackendState(mode: AppBackendMode.privateLocal, activePrivateAiId: 'llm'));
-}
-
 void main() {
   group('My Private AI Panel', () {
     late MockPrivateAiServer server;
@@ -39,6 +34,8 @@ void main() {
       await server.start();
 
       SharedPreferences.setMockInitialValues({
+        'app_backend_mode': 'private',
+        'active_private_ai_id': 'llm',
         'private_ai_config_llm': jsonEncode({
           'baseUrl': server.baseUrl,
           'model': 'test',
@@ -71,7 +68,7 @@ void main() {
           overrides: [
             privateChatBoxProvider.overrideWithValue(chatBox),
             secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
-            backendStateProvider.overrideWith((ref) => _FakeBackendStateNotifier()),
+            backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
           ],
           child: const App(),
         ),
@@ -94,7 +91,7 @@ void main() {
           overrides: [
             privateChatBoxProvider.overrideWithValue(chatBox),
             secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
-            backendStateProvider.overrideWith((ref) => _FakeBackendStateNotifier()),
+            backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
           ],
           child: const App(),
         ),
@@ -127,7 +124,7 @@ void main() {
           overrides: [
             privateChatBoxProvider.overrideWithValue(chatBox),
             secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
-            backendStateProvider.overrideWith((ref) => _FakeBackendStateNotifier()),
+            backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
           ],
           child: const App(),
         ),

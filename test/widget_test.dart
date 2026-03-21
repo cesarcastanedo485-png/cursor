@@ -19,11 +19,6 @@ class _FakeSecureStorage extends SecureStorageService {
   Future<String?> getApiKey() async => null;
 }
 
-class _FakeBackendStateNotifier extends StateNotifier<BackendState> {
-  _FakeBackendStateNotifier()
-      : super(const BackendState(mode: AppBackendMode.privateLocal, activePrivateAiId: 'llm'));
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -46,7 +41,7 @@ void main() {
         overrides: [
           privateChatBoxProvider.overrideWithValue(box),
           secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
-          backendStateProvider.overrideWith((ref) => _FakeBackendStateNotifier()),
+          backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
         ],
         child: const App(),
       ),
