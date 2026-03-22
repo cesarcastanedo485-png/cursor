@@ -34,6 +34,16 @@ class ApkReleaseEntry {
 /// Newest APK first.
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
+    versionLabel: '2.0.6',
+    buildNumber: 16,
+    released: '2026-03-22',
+    changes: [
+      'Commissions tab: 4th main tab with WebView (set Mordecai URL in Settings).',
+      'Settings: API keys & secrets section with tappable links (Cursor, GitHub, releases).',
+      'Commissions ecosystem: all key/secrets links accessible from phone.',
+    ],
+  ),
+  ApkReleaseEntry(
     versionLabel: '2.0.5',
     buildNumber: 15,
     released: '2026-03-20',

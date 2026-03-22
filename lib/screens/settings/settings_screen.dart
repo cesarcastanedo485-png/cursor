@@ -25,6 +25,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _host = TextEditingController();
   final _ollamaPort = TextEditingController();
   final _comfyPort = TextEditingController();
+  final _mordecaiUrl = TextEditingController();
   bool _prefsLoaded = false;
   PackageInfo? _packageInfo;
 
@@ -48,6 +49,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _host.dispose();
     _ollamaPort.dispose();
     _comfyPort.dispose();
+    _mordecaiUrl.dispose();
     super.dispose();
   }
 
@@ -57,7 +59,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _host.text = prefs.localServerHost;
     _ollamaPort.text = prefs.localOllamaPort;
     _comfyPort.text = prefs.localComfyPort;
+    _mordecaiUrl.text = prefs.mordecaiCommissionsUrl;
     setState(() => _prefsLoaded = true);
+  }
+
+  Future<void> _saveMordecaiUrl() async {
+    final prefs = await ref.read(preferencesProvider.future);
+    await prefs.setMordecaiCommissionsUrl(_mordecaiUrl.text.trim());
+    ref.invalidate(preferencesProvider);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mordecai URL saved. Commissions tab will load it.')),
+    );
   }
 
   Future<void> _saveLocalDefaults() async {
@@ -171,6 +184,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('Why repos may be missing + tips'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: _showConnectGithub,
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'API keys & secrets (tap to open)',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                _LinkTile(
+                  icon: Icons.vpn_key_rounded,
+                  title: 'Cursor API key',
+                  subtitle: 'Dashboard → Cloud Agents',
+                  url: apiKeyHelpUrl,
+                ),
+                _LinkTile(
+                  icon: Icons.link_rounded,
+                  title: 'Connect GitHub to Cursor',
+                  url: cursorConnectGithubUrl,
+                ),
+                _LinkTile(
+                  icon: Icons.token_rounded,
+                  title: 'GitHub tokens (PAT)',
+                  url: githubTokensUrl,
+                ),
+                _LinkTile(
+                  icon: Icons.extension_rounded,
+                  title: 'GitHub connections',
+                  url: githubConnectionsUrl,
+                ),
+                _LinkTile(
+                  icon: Icons.security_rounded,
+                  title: 'Repo secrets (Actions)',
+                  subtitle: 'For APK build',
+                  url: 'https://github.com/cesarcastanedo485-png/cursor/settings/secrets/actions',
+                ),
+                _LinkTile(
+                  icon: Icons.download_rounded,
+                  title: 'Download APK (Releases)',
+                  url: githubReleasesUrl,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'Commissions (Mordecai URL)',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    controller: _mordecaiUrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Mordecai URL',
+                      hintText: 'https://yourserver.com or ngrok URL',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: FilledButton(
+                    onPressed: _saveMordecaiUrl,
+                    child: const Text('Save Mordecai URL'),
+                  ),
                 ),
                 const Divider(),
                 Padding(
@@ -321,6 +400,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({
+    required this.icon,
+    required this.title,
+    required this.url,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final String url;
+
+  Future<void> _openUrl(BuildContext context) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle!) : null,
+      trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+      onTap: () => _openUrl(context),
     );
   }
 }

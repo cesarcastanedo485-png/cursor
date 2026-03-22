@@ -4,4 +4,5 @@ abstract class AppStrings {
   static const String cloudAgents = 'Cloud Agents';
   static const String privateAis = 'My Private AIs';
   static const String capabilities = 'Capabilities';
+  static const String commissions = 'Commissions';
 }

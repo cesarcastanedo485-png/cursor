@@ -18,6 +18,7 @@ class PreferencesService {
   static const _ollamaPort = 'local_ollama_port';
   static const _comfyPort = 'local_comfy_port';
   static const _connectGithubSeen = 'connect_github_hint_seen';
+  static const _mordecaiCommissionsUrl = 'mordecai_commissions_url';
   static const _privateConfigPrefix = 'private_ai_config_';
 
   String get backendMode => _prefs.getString(_backendMode) ?? 'cloud';
@@ -43,6 +44,10 @@ class PreferencesService {
   bool get connectGithubHintSeen => _prefs.getBool(_connectGithubSeen) ?? false;
 
   Future<void> setConnectGithubHintSeen(bool v) => _prefs.setBool(_connectGithubSeen, v);
+
+  String get mordecaiCommissionsUrl => _prefs.getString(_mordecaiCommissionsUrl) ?? '';
+
+  Future<void> setMordecaiCommissionsUrl(String v) => _prefs.setString(_mordecaiCommissionsUrl, v);
 
   PrivateAiStoredConfig? getPrivateAiConfig(String aiId) {
     final raw = _prefs.getString('$_privateConfigPrefix$aiId');
