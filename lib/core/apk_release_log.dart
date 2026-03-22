@@ -3,7 +3,8 @@
 /// **Maintenance:** Whenever you bump `pubspec.yaml` `version:` for a shipped APK,
 /// append a new [ApkReleaseEntry] at the **top** of [apkReleaseHistory] with the
 /// same `versionLabel` + `buildNumber` and bullet points for that build only.
-/// This keeps Settings → About aligned with CI / Drive filenames like
+/// This keeps Settings → About and the **What's new** dialog (first launch after an
+/// update) aligned with CI / Drive filenames like
 /// `MordechaiusMaximus-v2.0.4-build14.apk`.
 library;
 
@@ -72,3 +73,13 @@ const List<ApkReleaseEntry> apkReleaseHistory = [
     ],
   ),
 ];
+
+/// Bundled release notes for this [buildNumber], or null if not listed in [apkReleaseHistory].
+ApkReleaseEntry? apkReleaseEntryForInstalledBuild(int buildNumber) {
+  for (final e in apkReleaseHistory) {
+    if (e.buildNumber == buildNumber) {
+      return e;
+    }
+  }
+  return null;
+}

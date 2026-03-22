@@ -18,6 +18,7 @@ class PreferencesService {
   static const _ollamaPort = 'local_ollama_port';
   static const _comfyPort = 'local_comfy_port';
   static const _connectGithubSeen = 'connect_github_hint_seen';
+  static const _lastWhatsNewAckBuild = 'last_whats_new_ack_build';
   static const _mordecaiCommissionsUrl = 'mordecai_commissions_url';
   static const _privateConfigPrefix = 'private_ai_config_';
 
@@ -44,6 +45,12 @@ class PreferencesService {
   bool get connectGithubHintSeen => _prefs.getBool(_connectGithubSeen) ?? false;
 
   Future<void> setConnectGithubHintSeen(bool v) => _prefs.setBool(_connectGithubSeen, v);
+
+  /// Last APK [buildNumber] for which the user dismissed the in-app "What's new" prompt.
+  int get lastWhatsNewAcknowledgedBuild => _prefs.getInt(_lastWhatsNewAckBuild) ?? 0;
+
+  Future<void> setLastWhatsNewAcknowledgedBuild(int build) =>
+      _prefs.setInt(_lastWhatsNewAckBuild, build);
 
   String get mordecaiCommissionsUrl => _prefs.getString(_mordecaiCommissionsUrl) ?? '';
 

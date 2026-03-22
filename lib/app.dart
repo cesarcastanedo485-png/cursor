@@ -14,6 +14,7 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/private_ais/private_ais_screen.dart';
 import 'services/notification_service.dart';
 import 'widgets/active_ai_banner.dart';
+import 'widgets/whats_new_gate.dart';
 
 /// Global key for deep linking from push notifications.
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -83,7 +84,9 @@ class _MainShellWithBottomNav extends ConsumerWidget {
     // Start API-key hydration early so first cloud tab load does not flash auth errors.
     ref.watch(apiBootstrapProvider);
     return const _NotificationInit(
-      child: _MainShellBody(),
+      child: WhatsNewGate(
+        child: _MainShellBody(),
+      ),
     );
   }
 }
