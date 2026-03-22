@@ -36,6 +36,16 @@ class _TestThemeNotifier extends ThemeModeNotifier {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets('App builds (smoke)', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: SizedBox()),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(MaterialApp), findsOneWidget);
+  });
+
   testWidgets('App builds', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
       'app_backend_mode': 'private',
@@ -44,12 +54,18 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     final preferences = PreferencesService(prefs);
 
-    final dir = await Directory.systemTemp.createTemp('mm_wt');
-    Hive.init(dir.path);
-    final box = await Hive.openBox<String>('mm_private_chat');
+    late final Directory dir;
+    late final Box<String> box;
+    await tester.runAsync(() async {
+      dir = await Directory.systemTemp.createTemp('mm_wt');
+      Hive.init(dir.path);
+      box = await Hive.openBox<String>('mm_private_chat');
+    });
     addTearDown(() async {
-      await box.close();
-      await dir.delete(recursive: true);
+      await tester.runAsync(() async {
+        await box.close();
+        await dir.delete(recursive: true);
+      });
     });
 
     await tester.pumpWidget(

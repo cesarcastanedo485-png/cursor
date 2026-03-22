@@ -193,34 +193,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.vpn_key_rounded,
                   title: 'Cursor API key',
                   subtitle: 'Dashboard → Cloud Agents',
                   url: apiKeyHelpUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.link_rounded,
                   title: 'Connect GitHub to Cursor',
                   url: cursorConnectGithubUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.token_rounded,
                   title: 'GitHub tokens (PAT)',
                   url: githubTokensUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.extension_rounded,
                   title: 'GitHub connections',
                   url: githubConnectionsUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.security_rounded,
                   title: 'Repo secrets (Actions)',
                   subtitle: 'For APK build',
                   url: 'https://github.com/cesarcastanedo485-png/cursor/settings/secrets/actions',
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.download_rounded,
                   title: 'Download APK (Releases)',
                   url: githubReleasesUrl,
