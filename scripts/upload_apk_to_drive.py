@@ -127,21 +127,37 @@ def main() -> None:
         print(f"  id={updated.get('id')}")
         print(f"  name={updated.get('name')}")
         print(f"  webViewLink={updated.get('webViewLink')}")
-        return
-
-    created = (
-        service.files()
-        .create(
-            body=file_metadata,
-            media_body=media,
-            fields="id,name,webViewLink,webContentLink",
+        file_id = updated.get("id")
+    else:
+        created = (
+            service.files()
+            .create(
+                body=file_metadata,
+                media_body=media,
+                fields="id,name,webViewLink,webContentLink",
+            )
+            .execute()
         )
-        .execute()
-    )
-    print("Uploaded new APK to Google Drive:")
-    print(f"  id={created.get('id')}")
-    print(f"  name={created.get('name')}")
-    print(f"  webViewLink={created.get('webViewLink')}")
+        print("Uploaded new APK to Google Drive:")
+        print(f"  id={created.get('id')}")
+        print(f"  name={created.get('name')}")
+        print(f"  webViewLink={created.get('webViewLink')}")
+        file_id = created.get("id")
+
+    if file_id:
+        verified = (
+            service.files()
+            .get(
+                fileId=file_id,
+                fields="id,name,size,modifiedTime,md5Checksum",
+            )
+            .execute()
+        )
+        print("Drive verify (read-back after upload):")
+        print(f"  id={verified.get('id')}")
+        print(f"  size={verified.get('size')}")
+        print(f"  modifiedTime={verified.get('modifiedTime')}")
+        print(f"  md5Checksum={verified.get('md5Checksum')}")
 
 
 if __name__ == "__main__":

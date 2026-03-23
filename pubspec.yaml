@@ -1,7 +1,7 @@
 name: mordechaius_maximus
 description: Mordechaius Maximus — Cloud Agents, Private AIs, Capabilities.
 publish_to: 'none'
-version: 2.0.6+16
+version: 2.0.7+17
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

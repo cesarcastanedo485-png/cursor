@@ -34,6 +34,15 @@ class ApkReleaseEntry {
 /// Newest APK first.
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
+    versionLabel: '2.0.7',
+    buildNumber: 17,
+    released: '2026-03-23',
+    changes: [
+      'CI: APK + Google Drive workflow runs on this release branch (MordechaiusMaximus-install.apk).',
+      'Flutter CI (analyze/test) also runs on the same branch before build.',
+    ],
+  ),
+  ApkReleaseEntry(
     versionLabel: '2.0.6',
     buildNumber: 16,
     released: '2026-03-22',
