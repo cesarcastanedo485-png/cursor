@@ -15,10 +15,8 @@ class NotificationService {
 
   static GlobalKey<NavigatorState>? get navigatorKey => _navigatorKey;
 
-  void Function(Object? message)? _onForeground;
-
-  void setForegroundCallback(void Function(Object? message) cb) {
-    _onForeground = cb;
+  void setForegroundCallback(void Function(Object? message) _) {
+    // Reserved when FCM foreground handling is wired.
   }
 
   Future<void> init(WidgetRef ref) async {
