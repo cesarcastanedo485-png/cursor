@@ -112,7 +112,8 @@ class _NotificationInitState extends ConsumerState<_NotificationInit> {
     NotificationService.instance.setForegroundCallback((msg) {
       if (!mounted) return;
       ref.read(lastNotificationProvider.notifier).state = msg;
-      ref.read(notificationUnreadCountProvider.notifier).update((n) => n + 1);
+      ref.read(notificationUnreadCountProvider.notifier).state =
+          ref.read(notificationUnreadCountProvider) + 1;
     });
     await NotificationService.instance.init(ref);
     if (!mounted) return;

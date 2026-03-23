@@ -40,6 +40,7 @@ const List<ApkReleaseEntry> apkReleaseHistory = [
     changes: [
       'CI: APK + Google Drive workflow runs on this release branch (MordechaiusMaximus-install.apk).',
       'Flutter CI (analyze/test) also runs on the same branch before build.',
+      'Restore notification provider + service stubs so release APK compiles (FCM wiring optional).',
     ],
   ),
   ApkReleaseEntry(
