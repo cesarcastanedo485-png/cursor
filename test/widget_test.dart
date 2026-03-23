@@ -22,10 +22,13 @@ class _FakeSecureStorage extends SecureStorageService {
   Future<String?> getApiKey() async => null;
 }
 
-/// Keeps onboarding in loading state so we only verify MaterialApp builds
-/// without building the full main shell.
-class _LoadingOnboardingNotifier extends OnboardingStateNotifier {
-  _LoadingOnboardingNotifier(super.storage) : super(skipInitialLoad: true);
+/// Onboarding not completed: builds [OnboardingScreen] only (no main shell / notification init).
+/// Avoids the loading branch, which keeps a [CircularProgressIndicator] that never settles.
+class _OnboardingNotDoneNotifier extends OnboardingStateNotifier {
+  _OnboardingNotDoneNotifier()
+      : super(_FakeSecureStorage(), skipInitialLoad: true) {
+    state = const AsyncValue.data(false);
+  }
 }
 
 /// Static theme; skips SharedPreferences to avoid CI timing issues.
@@ -59,7 +62,7 @@ void main() {
           secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
           preferencesProvider.overrideWith((ref) => Future.value(preferences)),
           backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
-          onboardingStateProvider.overrideWith((ref) => _LoadingOnboardingNotifier(_FakeSecureStorage())),
+          onboardingStateProvider.overrideWith((ref) => _OnboardingNotDoneNotifier()),
           themeModeProvider.overrideWith((ref) => _TestThemeNotifier()),
         ],
         child: const App(),
