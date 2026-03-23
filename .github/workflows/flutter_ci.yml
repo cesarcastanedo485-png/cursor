@@ -3,9 +3,15 @@ name: Flutter CI
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
+      - cursor/apk-update-to-drive-a435
   pull_request:
-    branches: [main, master]
+    branches:
+      - main
+      - master
+      - cursor/apk-update-to-drive-a435
 
 # Opt into Node 24 for JS actions (actions/checkout etc.) — Node 20 is deprecated.
 env:
