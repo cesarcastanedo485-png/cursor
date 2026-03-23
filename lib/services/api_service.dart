@@ -12,8 +12,6 @@ import '../data/models/cursor_repository.dart';
 /// Cursor Cloud Agents API client.
 /// Base URL: https://api.cursor.com
 /// Auth: Basic base64(apiKey + ":").
-///
-/// Use only for Cursor Cloud. Local/private AI uses [LocalOpenAiService].
 class ApiService {
   ApiService({String? apiKey}) : _apiKey = apiKey {
     _dio = Dio(BaseOptions(

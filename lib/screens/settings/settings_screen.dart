@@ -5,10 +5,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/app_strings.dart';
 import '../../../core/constants.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/backend_mode_provider.dart';
 import '../../../providers/repositories_provider.dart';
 import '../../../providers/preferences_provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/bridge_task_provider.dart';
 import '../../../widgets/connectivity_diagnostics.dart';
 
 /// Settings: API, Connect GitHub hint, local server defaults, theme, reset.
@@ -22,10 +22,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _testing = false;
   String? _testResult;
-  final _host = TextEditingController();
-  final _ollamaPort = TextEditingController();
-  final _comfyPort = TextEditingController();
   final _mordecaiUrl = TextEditingController();
+  final _mordecaiBridgeSecret = TextEditingController();
   bool _prefsLoaded = false;
   PackageInfo? _packageInfo;
 
@@ -46,20 +44,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
-    _host.dispose();
-    _ollamaPort.dispose();
-    _comfyPort.dispose();
     _mordecaiUrl.dispose();
+    _mordecaiBridgeSecret.dispose();
     super.dispose();
   }
 
   Future<void> _loadPrefs() async {
     final prefs = await ref.read(preferencesProvider.future);
+    final storage = ref.read(secureStorageProvider);
     if (!mounted) return;
-    _host.text = prefs.localServerHost;
-    _ollamaPort.text = prefs.localOllamaPort;
-    _comfyPort.text = prefs.localComfyPort;
     _mordecaiUrl.text = prefs.mordecaiCommissionsUrl;
+    final secret = await storage.getMordecaiBridgeSecret();
+    _mordecaiBridgeSecret.text = secret ?? '';
     setState(() => _prefsLoaded = true);
   }
 
@@ -67,21 +63,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final prefs = await ref.read(preferencesProvider.future);
     await prefs.setMordecaiCommissionsUrl(_mordecaiUrl.text.trim());
     ref.invalidate(preferencesProvider);
+    ref.invalidate(bridgeTaskServiceProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Mordecai URL saved. Commissions tab will load it.')),
     );
   }
 
-  Future<void> _saveLocalDefaults() async {
-    final prefs = await ref.read(preferencesProvider.future);
-    await prefs.setLocalServerHost(_host.text.trim().isEmpty ? '192.168.1.100' : _host.text.trim());
-    await prefs.setLocalOllamaPort(_ollamaPort.text.trim().isEmpty ? '11434' : _ollamaPort.text.trim());
-    await prefs.setLocalComfyPort(_comfyPort.text.trim().isEmpty ? '8188' : _comfyPort.text.trim());
-    await ref.read(backendStateProvider.notifier).refreshFromPrefs();
+  Future<void> _saveMordecaiBridgeSecret() async {
+    final storage = ref.read(secureStorageProvider);
+    await storage.setMordecaiBridgeSecret(
+      _mordecaiBridgeSecret.text.trim().isEmpty ? null : _mordecaiBridgeSecret.text.trim(),
+    );
+    ref.invalidate(bridgeTaskServiceProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Local defaults saved. Update each Private AI URL in My Private AIs if needed.')),
+      const SnackBar(content: Text('Bridge secret saved.')),
     );
   }
 
@@ -193,34 +190,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.vpn_key_rounded,
                   title: 'Cursor API key',
                   subtitle: 'Dashboard → Cloud Agents',
                   url: apiKeyHelpUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.link_rounded,
                   title: 'Connect GitHub to Cursor',
                   url: cursorConnectGithubUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.token_rounded,
                   title: 'GitHub tokens (PAT)',
                   url: githubTokensUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.extension_rounded,
                   title: 'GitHub connections',
                   url: githubConnectionsUrl,
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.security_rounded,
                   title: 'Repo secrets (Actions)',
                   subtitle: 'For APK build',
                   url: 'https://github.com/cesarcastanedo485-png/cursor/settings/secrets/actions',
                 ),
-                _LinkTile(
+                const _LinkTile(
                   icon: Icons.download_rounded,
                   title: 'Download APK (Releases)',
                   url: githubReleasesUrl,
@@ -245,74 +242,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: FilledButton(
                     onPressed: _saveMordecaiUrl,
                     child: const Text('Save Mordecai URL'),
                   ),
                 ),
-                const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Local private server defaults',
+                    'Bridge secret (optional)',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'Used as defaults when you add Private AIs (Ollama / ComfyUI on your LAN or Tailscale IP).',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
-                    controller: _host,
+                    controller: _mordecaiBridgeSecret,
+                    obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: 'Server IP or hostname',
-                      hintText: '192.168.1.100',
+                      labelText: 'Mordecai bridge secret',
+                      hintText: 'Matches MORDECAI_BRIDGE_SECRET on server',
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _ollamaPort,
-                          decoration: const InputDecoration(
-                            labelText: 'Ollama port',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _comfyPort,
-                          decoration: const InputDecoration(
-                            labelText: 'ComfyUI port',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: FilledButton(
-                    onPressed: _saveLocalDefaults,
-                    child: const Text('Save local defaults'),
+                    onPressed: _saveMordecaiBridgeSecret,
+                    child: const Text('Save bridge secret'),
                   ),
                 ),
                 const Divider(),
@@ -361,19 +321,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('Dashboard → Cloud Agents'),
                   onTap: _openHelp,
                 ),
-                ListTile(
-                  leading: const Icon(Icons.menu_book_rounded),
-                  title: const Text('Private AIs setup'),
-                  subtitle: const Text('See SETUP_PRIVATE_AIs.md in the project folder'),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Open SETUP_PRIVATE_AIs.md on your PC for Ollama, ComfyUI, and Tailscale steps.'),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
                 ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('About'),

@@ -7,6 +7,8 @@ import '../../screens/agents/my_agents_screen.dart';
 import '../../screens/agent_detail/agent_detail_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/settings/about_screen.dart';
+import '../../screens/achievements/achievements_placeholder_screen.dart';
+import '../../screens/repos/repos_route_screen.dart';
 
 /// Simple named route map (no go_router dependency for routing logic).
 class AppRouter {
@@ -24,6 +26,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case AppRoutes.about:
         return MaterialPageRoute(builder: (_) => const AboutScreen());
+      case AppRoutes.repos:
+        return MaterialPageRoute(builder: (_) => const ReposRouteScreen());
+      case AppRoutes.achievements:
+        return MaterialPageRoute(builder: (_) => const AchievementsPlaceholderScreen());
       case AppRoutes.agentDetail:
         final id = settings.arguments as String?;
         return MaterialPageRoute(

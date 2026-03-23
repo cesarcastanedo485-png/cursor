@@ -1,14 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mordechaius_maximus/app.dart';
 import 'package:mordechaius_maximus/data/local/secure_storage_service.dart';
 import 'package:mordechaius_maximus/providers/auth_provider.dart';
-import 'package:mordechaius_maximus/providers/backend_mode_provider.dart';
-import 'package:mordechaius_maximus/providers/private_chat_provider.dart';
 import 'package:mordechaius_maximus/providers/theme_provider.dart';
 import 'package:mordechaius_maximus/data/local/preferences_service.dart';
 import 'package:mordechaius_maximus/providers/preferences_provider.dart';
@@ -37,28 +32,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('App builds', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({
-      'app_backend_mode': 'private',
-      'active_private_ai_id': 'llm',
-    });
+    SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final preferences = PreferencesService(prefs);
-
-    final dir = await Directory.systemTemp.createTemp('mm_wt');
-    Hive.init(dir.path);
-    final box = await Hive.openBox<String>('mm_private_chat');
-    addTearDown(() async {
-      await box.close();
-      await dir.delete(recursive: true);
-    });
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          privateChatBoxProvider.overrideWithValue(box),
           secureStorageProvider.overrideWith((ref) => _FakeSecureStorage()),
           preferencesProvider.overrideWith((ref) => Future.value(preferences)),
-          backendStateProvider.overrideWith((ref) => BackendStateNotifier(ref)),
           onboardingStateProvider.overrideWith((ref) => _LoadingOnboardingNotifier(_FakeSecureStorage())),
           themeModeProvider.overrideWith((ref) => _TestThemeNotifier()),
         ],

@@ -4,16 +4,11 @@ import '../data/models/artifact.dart';
 import '../data/models/conversation.dart';
 import '../data/models/launch_request.dart';
 import 'auth_provider.dart';
-import 'backend_mode_provider.dart';
 import 'cache_provider.dart';
 
-/// List of agents (from API when Cursor Cloud; cached-only when Private AI mode).
+/// List of agents from Cursor Cloud API.
 final agentsListProvider = FutureProvider.autoDispose<List<Agent>>((ref) async {
-  final mode = ref.watch(appBackendModeProvider);
   final cache = await ref.watch(cacheServiceProvider.future);
-  if (mode == AppBackendMode.privateLocal) {
-    return cache.getCachedAgents();
-  }
   await ref.watch(apiBootstrapProvider.future);
   final api = ref.watch(apiServiceProvider);
   final list = await api.getAgents();

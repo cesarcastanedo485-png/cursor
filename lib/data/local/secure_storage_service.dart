@@ -11,6 +11,8 @@ const String _keyApiKey = 'cursor_cloud_agents_api_key';
 const String _keyOnboardingDone = 'onboarding_done';
 const String _keyCapabilityPrefix = 'capability_config_';
 const String _keyManualRepoUrls = 'manual_repo_urls';
+const String _keyFcmToken = 'fcm_token';
+const String _keyMordecaiBridgeSecret = 'mordecai_bridge_secret';
 
 /// Encrypted storage for API key, onboarding state, and capability config.
 class SecureStorageService implements CapabilityConfigProvider {
@@ -70,6 +72,28 @@ class SecureStorageService implements CapabilityConfigProvider {
 
   Future<void> setManualRepoUrls(List<String> urls) async {
     await _storage.write(key: _keyManualRepoUrls, value: jsonEncode(urls));
+  }
+
+  /// FCM token for push notifications.
+  Future<String?> getFcmToken() => _storage.read(key: _keyFcmToken);
+
+  Future<void> setFcmToken(String? value) async {
+    if (value == null || value.isEmpty) {
+      await _storage.delete(key: _keyFcmToken);
+    } else {
+      await _storage.write(key: _keyFcmToken, value: value);
+    }
+  }
+
+  /// Mordecai bridge secret for task queue API (X-Bridge-Secret header).
+  Future<String?> getMordecaiBridgeSecret() => _storage.read(key: _keyMordecaiBridgeSecret);
+
+  Future<void> setMordecaiBridgeSecret(String? value) async {
+    if (value == null || value.trim().isEmpty) {
+      await _storage.delete(key: _keyMordecaiBridgeSecret);
+    } else {
+      await _storage.write(key: _keyMordecaiBridgeSecret, value: value.trim());
+    }
   }
 }
 

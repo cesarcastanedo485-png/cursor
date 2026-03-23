@@ -5,13 +5,9 @@ import '../../../core/app_strings.dart';
 import '../../../data/models/agent.dart';
 import '../../../core/constants.dart';
 import '../../../providers/agents_provider.dart';
-import '../../../providers/backend_mode_provider.dart';
 import '../../../core/api_errors.dart';
 import '../../../providers/cache_provider.dart';
 import '../../../providers/shell_providers.dart';
-import '../../../data/models/private_ai_preset.dart';
-import '../../../providers/preferences_provider.dart';
-import '../private_ais/private_chat_screen.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/grouped_agents_list.dart';
 import '../../widgets/loading_skeleton.dart';
@@ -26,28 +22,10 @@ class HomeScreen extends ConsumerWidget {
     final cacheAsync = ref.watch(cachedAgentsProvider);
     final cacheTs = ref.watch(cacheTimestampProvider);
 
-    final private = ref.watch(appBackendModeProvider) == AppBackendMode.privateLocal;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.appName),
         actions: [
-          if (private)
-            IconButton(
-              tooltip: 'Private chat',
-              icon: const Icon(Icons.chat_rounded),
-              onPressed: () async {
-                final prefs = await ref.read(preferencesProvider.future);
-                final cfg = prefs.getPrivateAiConfig('llm') ?? kPrivateAiPresets.first.defaultConfig(prefs);
-                if (!context.mounted) return;
-                Navigator.push<void>(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => PrivateChatScreen(config: cfg, title: 'My LLM'),
-                  ),
-                );
-              },
-            ),
           IconButton(
             tooltip: 'All agents',
             icon: const Icon(Icons.list_alt_rounded),
@@ -55,26 +33,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (private)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              child: Card(
-                color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
-                child: const ListTile(
-                  dense: true,
-                  leading: Icon(Icons.info_outline_rounded),
-                  title: Text(
-                    'Private AI mode: agent list is cached only. Use the top banner to switch to Cursor Cloud to refresh.',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ),
-              ),
-            ),
-          Expanded(
-            child: agentsAsync.when(
+      body: agentsAsync.when(
               data: (agents) {
                 if (agents.isEmpty) {
                   return _empty(context, ref, cacheAsync, cacheTs);
@@ -92,9 +51,6 @@ class HomeScreen extends ConsumerWidget {
               loading: () => _loadingOrCached(context, ref, cacheAsync, cacheTs),
               error: (e, _) => _errorOrCached(context, ref, e, cacheAsync, cacheTs),
             ),
-          ),
-        ],
-      ),
     );
   }
 

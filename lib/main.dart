@@ -1,19 +1,14 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'app.dart';
-import 'providers/private_chat_provider.dart';
+import 'firebase_options.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  final chatBox = await Hive.openBox<String>('mm_private_chat');
-  runApp(
-    ProviderScope(
-      overrides: [
-        privateChatBoxProvider.overrideWithValue(chatBox),
-      ],
-      child: const App(),
-    ),
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  runApp(const ProviderScope(child: App()));
 }

@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'core/apk_release_log.dart';
 import 'core/app_strings.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/preferences_provider.dart';
 import 'providers/shell_providers.dart';
 import 'providers/theme_provider.dart';
 import 'screens/capabilities/capabilities_screen.dart';
 import 'screens/cloud/cloud_agents_shell.dart';
 import 'screens/commissions/commissions_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/private_ais/private_ais_screen.dart';
+import 'screens/whats_new/whats_new_screen.dart';
 import 'services/notification_service.dart';
-import 'widgets/active_ai_banner.dart';
 
 /// Global key for deep linking from push notifications.
 final navigatorKey = GlobalKey<NavigatorState>();
 
-/// Root widget: theme, onboarding gate, main shell (Cloud Agents / Private AIs / Capabilities).
+/// Root widget: theme, onboarding gate, main shell (Cloud Agents / Capabilities / Commissions).
 class App extends ConsumerWidget {
   const App({super.key});
 
@@ -38,7 +40,7 @@ class App extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRouter.onGenerateRoute,
       home: onboardingAsync.when(
-        data: (done) => done ? const _MainShellWithBottomNav() : const OnboardingScreen(),
+        data: (done) => done ? const _PostOnboardingGate() : const OnboardingScreen(),
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
@@ -72,6 +74,91 @@ class App extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+enum _PostOnboardingState { loading, whatsNew, main }
+
+class _PostOnboardingGate extends ConsumerStatefulWidget {
+  const _PostOnboardingGate();
+
+  @override
+  ConsumerState<_PostOnboardingGate> createState() => _PostOnboardingGateState();
+}
+
+class _PostOnboardingGateState extends ConsumerState<_PostOnboardingGate> {
+  _PostOnboardingState _state = _PostOnboardingState.loading;
+  List<ApkReleaseEntry> _whatsNewEntries = [];
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _check());
+  }
+
+  Future<void> _check() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final prefs = await ref.read(preferencesProvider.future);
+      final lastSeen = prefs.lastSeenVersion;
+
+      if (lastSeen == null || lastSeen.isEmpty) {
+        await prefs.setLastSeenVersion('${info.version}+${info.buildNumber}');
+        if (!mounted) return;
+        setState(() {
+          _state = _PostOnboardingState.main;
+          _packageInfo = info;
+        });
+        return;
+      }
+
+      final show = await shouldShowWhatsNew(info, lastSeen);
+      if (!mounted) return;
+      if (show) {
+        final currentBuild = int.tryParse(info.buildNumber) ?? 0;
+        final entries = getNewerReleaseEntries(lastSeen, currentBuild);
+        setState(() {
+          _state = _PostOnboardingState.whatsNew;
+          _whatsNewEntries = entries;
+          _packageInfo = info;
+        });
+      } else {
+        setState(() {
+          _state = _PostOnboardingState.main;
+          _packageInfo = info;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _state = _PostOnboardingState.main);
+    }
+  }
+
+  void _onWhatsNewDismiss() async {
+    if (_packageInfo == null) return;
+    final prefs = await ref.read(preferencesProvider.future);
+    await prefs.setLastSeenVersion('${_packageInfo!.version}+${_packageInfo!.buildNumber}');
+    ref.invalidate(preferencesProvider);
+    if (!mounted) return;
+    setState(() => _state = _PostOnboardingState.main);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    switch (_state) {
+      case _PostOnboardingState.loading:
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      case _PostOnboardingState.whatsNew:
+        return WhatsNewScreen(
+          entries: _whatsNewEntries,
+          onDismiss: _onWhatsNewDismiss,
+        );
+      case _PostOnboardingState.main:
+        return const _MainShellWithBottomNav();
+    }
   }
 }
 
@@ -134,23 +221,14 @@ class _MainShellBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tab = ref.watch(mainShellTabProvider).clamp(0, 3);
+    final tab = ref.watch(mainShellTabProvider).clamp(0, 2);
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const ActiveAiBanner(),
-          Expanded(
-            child: IndexedStack(
-              index: tab,
-              children: const [
-                CloudAgentsShell(),
-                PrivateAisScreen(),
-                CapabilitiesScreen(),
-                CommissionsScreen(),
-              ],
-            ),
-          ),
+      body: IndexedStack(
+        index: tab,
+        children: const [
+          CloudAgentsShell(),
+          CapabilitiesScreen(),
+          CommissionsScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -161,11 +239,6 @@ class _MainShellBody extends ConsumerWidget {
             icon: Icon(Icons.cloud_outlined),
             selectedIcon: Icon(Icons.cloud_rounded),
             label: AppStrings.cloudAgents,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.psychology_outlined),
-            selectedIcon: Icon(Icons.psychology_rounded),
-            label: AppStrings.privateAis,
           ),
           NavigationDestination(
             icon: Icon(Icons.extension_outlined),

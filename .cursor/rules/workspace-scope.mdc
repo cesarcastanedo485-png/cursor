@@ -9,7 +9,7 @@ This workspace is **Mordechaius Maximus** (package: `mordechaius_maximus`, app I
 
 **Project location:** `C:\Users\cmc\cursor_mobile`
 
-**What it is:** Flutter app (Android & iOS) for Cursor Pro Cloud Agents, My Private AIs (Ollama/ComfyUI), and Capabilities (SMS, OBS, etc.). APK output: `MordechaiusMaximus-install.apk`.
+**What it is:** Flutter app (Android & iOS) for Cursor Pro Cloud Agents, Capabilities (SMS, OBS, etc.), and Commissions (Mordecai WebView + health check). APK output: `MordechaiusMaximus-install.apk`.
 
 **Do NOT confuse with:**
 - The tarot card reading app (`Documents\tarrot`) — different project, different codebase

@@ -22,6 +22,16 @@ Gmail: enable 2FA → create an **App password** → use it as `EMAIL_PASSWORD`.
 
 Until `RCLONE_CMD` is set, the bridge returns an error explaining what to configure.
 
+## Cursor desktop bridge (agent tasks when Cursor is closed)
+
+Run **`cursor_desktop_bridge.py`** to get notified of agent tasks when Cursor isn't open.
+
+  pip install -r requirements-bridge.txt
+  export MORDECAI_URL=https://your-tunnel.trycloudflare.com
+  python cursor_desktop_bridge.py
+
+When a task arrives from the phone, the bridge copies the prompt to clipboard and shows an OS notification. Open Cursor and the extension will pick up the task from `~/.mordecai/pending_task.json`.
+
 ## Check for updates (phone)
 
 No bridge. In the app, **Configure** → paste a **direct** Google Drive download URL:

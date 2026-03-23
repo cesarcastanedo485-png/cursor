@@ -34,6 +34,29 @@ class ApkReleaseEntry {
 /// Newest APK first.
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
+    versionLabel: '2.0.8',
+    buildNumber: 18,
+    released: '2026-03-23',
+    changes: [
+      'My Private AIs removed — app focuses on Cloud Agents, Capabilities, and Commissions only.',
+      'Commissions: health check to Mordecai (/api/commissions/health, /health) before showing workflow.',
+      'When healthy: banner “Installed and up and running” then WebView; offline: Retry + open anyway.',
+      'Android: core library desugaring enabled for release builds (notifications / CI).',
+      'Unused dependencies dropped (TTS, video, cached images, Lottie).',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.7',
+    buildNumber: 17,
+    released: '2026-03-22',
+    changes: [
+      'Desktop bridge: Use desktop (saves tokens) toggle in Launch — send tasks to your Cursor on desktop instead of Cloud API.',
+      'What\'s New: Modal on first launch after app update showing changelog.',
+      'Settings: Bridge secret for Mordecai task queue API.',
+      'Cursor extension: Poll for tasks, copy/run in Composer, mark done.',
+    ],
+  ),
+  ApkReleaseEntry(
     versionLabel: '2.0.6',
     buildNumber: 16,
     released: '2026-03-22',

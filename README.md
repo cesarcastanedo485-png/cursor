@@ -21,9 +21,9 @@ Quick mobile flow:
 
 ---
 
-Flutter app (Android & iOS) for **Cursor Pro Cloud Agents** (tab: **Cloud Agents**), **My Private AIs** (local Ollama / ComfyUI), and **Capabilities** (automation tools + instruction manual).
+Flutter app (Android & iOS) for **Cursor Pro Cloud Agents**, **Capabilities** (automation + instruction manual), and **Commissions** (Mordecai phased workflow in a WebView, with a server health check first).
 
-**Architecture:** **Cloud Agents** mode uses `api.cursor.com` (Dio + Basic Auth). **Private** mode uses OpenAI-compatible `LocalOpenAiService`. Top **Active AI** banner shows which backend is active. Private chats use **Hive** (`mm_private_chat`) with cross-AI memory excerpts. **flutter_tts**, **image_picker**, **video_player** on per-AI chat.
+**Architecture:** **Cloud Agents** uses `api.cursor.com` (Dio + Basic Auth). **Capabilities** use configurable webhooks and optional desktop bridges. **Commissions** loads your Mordecai URL after verifying `/api/commissions/health` or `/health`.
 
 ## Prerequisites
 
@@ -81,15 +81,9 @@ Output APK: **`build/app/outputs/flutter-apk/app-release.apk`** → copied to **
 
 | Tab | Contents |
 |-----|----------|
-| **Cloud Agents** | Agents, Launch, My Repos, Settings (Connect GitHub, local IP/ports). |
-| **My Private AIs** | Five presets; **Chat** / **Studio**; configure URL + model + optional key. |
-| **Capabilities** | Tools (SMS, Messenger, TikTok, Opus, OBS, social, smart home, YouTube) + **Instruction manual** (OAuth, Alexa, OBS, APIs). |
-
-## Private AIs setup
-
-**[SETUP_PRIVATE_AIs.md](SETUP_PRIVATE_AIs.md)** — Ollama, ComfyUI, Tailscale/LAN.
-
-Optional: `.\scripts\complete_private_ai_setup.ps1`
+| **Cloud Agents** | Agents, Launch, My Repos, Settings (API keys, Mordecai URL, GitHub tips). |
+| **Capabilities** | Tools (SMS, OBS, smart home, etc.) + **Instruction manual**. |
+| **Commissions** | Mordecai web app; set **Mordecai URL** in Settings — app confirms server is up, then loads the workflow. |
 
 ## Branding assets
 
@@ -104,4 +98,4 @@ Optional: `.\scripts\complete_private_ai_setup.ps1`
 
 ## Tech
 
-Flutter, Material 3, Riverpod, Dio, Hive, flutter_secure_storage, flutter_svg, flutter_tts, url_launcher, webview_flutter.
+Flutter, Material 3, Riverpod, Dio, flutter_secure_storage, shared_preferences, Firebase Messaging, flutter_svg, url_launcher, webview_flutter.

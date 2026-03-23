@@ -5,8 +5,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/constants.dart';
 import '../../../providers/preferences_provider.dart';
 import '../../../providers/shell_providers.dart';
+import '../../../services/mordecai_health_service.dart';
 
-/// Commissions tab: WebView to Mordecai or placeholder with setup links.
+/// Commissions tab: health check + WebView to Mordecai, or setup placeholder.
 class CommissionsScreen extends ConsumerWidget {
   const CommissionsScreen({super.key});
 
@@ -24,7 +25,10 @@ class CommissionsScreen extends ConsumerWidget {
       data: (prefs) {
         final url = prefs.mordecaiCommissionsUrl.trim();
         if (url.isNotEmpty) {
-          return _CommissionsWebView(initialUrl: url);
+          return _CommissionsPanel(
+            key: ValueKey<String>(url),
+            rawUrl: url,
+          );
         }
         return _CommissionsPlaceholder(
           onOpenReleases: () => _openUrl(context, githubReleasesUrl),
@@ -46,34 +50,181 @@ class CommissionsScreen extends ConsumerWidget {
   }
 }
 
-class _CommissionsWebView extends StatefulWidget {
-  const _CommissionsWebView({required this.initialUrl});
+enum _HealthPhase { checking, ready, offline }
 
-  final String initialUrl;
+/// Health gate then WebView; [rawUrl] is as stored in Settings (may omit scheme).
+class _CommissionsPanel extends StatefulWidget {
+  const _CommissionsPanel({super.key, required this.rawUrl});
+
+  final String rawUrl;
 
   @override
-  State<_CommissionsWebView> createState() => _CommissionsWebViewState();
+  State<_CommissionsPanel> createState() => _CommissionsPanelState();
 }
 
-class _CommissionsWebViewState extends State<_CommissionsWebView> {
+class _CommissionsPanelState extends State<_CommissionsPanel> {
+  _HealthPhase _phase = _HealthPhase.checking;
+  bool _forceWebView = false;
   late final WebViewController _controller;
+  late final String _normalizedUrl;
 
   @override
   void initState() {
     super.initState();
+    _normalizedUrl = MordecaiHealthService.normalizeBaseUrl(widget.rawUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (_) {},
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.initialUrl));
+      ..loadRequest(Uri.parse(_normalizedUrl));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _runHealthCheck());
+  }
+
+  Future<void> _runHealthCheck() async {
+    setState(() {
+      _phase = _HealthPhase.checking;
+      _forceWebView = false;
+    });
+    final ok = await MordecaiHealthService.isReachable(widget.rawUrl);
+    if (!mounted) return;
+    setState(() {
+      _phase = ok ? _HealthPhase.ready : _HealthPhase.offline;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return WebViewWidget(controller: _controller);
+    final scheme = Theme.of(context).colorScheme;
+
+    if (_phase == _HealthPhase.checking && !_forceWebView) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                'Checking Mordecai server…',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _normalizedUrl,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_phase == _HealthPhase.offline && !_forceWebView) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 56, color: scheme.error),
+              const SizedBox(height: 16),
+              Text(
+                'Cannot reach Mordecai',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Start the server (npm start), use your tunnel URL (HTTPS on phone), '
+                'then tap Retry. Health checks call /api/commissions/health or /health.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              SelectableText(
+                _normalizedUrl,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _runHealthCheck,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => setState(() => _forceWebView = true),
+                child: const Text('Open web app anyway'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final skippedCheck =
+        _forceWebView && _phase == _HealthPhase.offline;
+    final bannerBg = skippedCheck ? scheme.tertiaryContainer : scheme.primaryContainer;
+    final bannerFg = skippedCheck ? scheme.onTertiaryContainer : scheme.onPrimaryContainer;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: bannerBg,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  skippedCheck ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
+                  color: bannerFg,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        skippedCheck
+                            ? 'Opened without health check'
+                            : 'Installed and up and running',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: bannerFg,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        skippedCheck
+                            ? 'The server did not respond to /health. Fix URL or tunnel, then tap refresh.'
+                            : 'Mordecai answered the health check. Commissions workflow is ready below.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: bannerFg.withValues(alpha: 0.9),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Re-check server',
+                  onPressed: _runHealthCheck,
+                  icon: Icon(Icons.refresh_rounded, color: bannerFg),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(child: WebViewWidget(controller: _controller)),
+      ],
+    );
   }
 }
 
@@ -107,7 +258,8 @@ class _CommissionsPlaceholder extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Build websites with phased workflows. Set Mordecai URL in Settings (Cloud Agents → Settings), or download the APK.',
+              'Set your Mordecai URL in Settings (Cloud Agents → Settings). '
+              'The app will verify the server, then open the phased commissions workflow.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
