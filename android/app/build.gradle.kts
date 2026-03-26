@@ -23,6 +23,38 @@ if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
 val useDebugSigningForRelease = localProperties.getProperty("useDebugSigningForRelease", "false") == "true"
+val appGoogleServicesFile = file("${project.projectDir}/google-services.json")
+val configuredGoogleServicesPath = (System.getenv("GOOGLE_SERVICES_JSON_PATH") ?: "").trim()
+val userProfile = (System.getenv("USERPROFILE") ?: "").trim()
+val userProfileOnDriveD = if (userProfile.matches(Regex("^[A-Za-z]:.*"))) {
+    "D${userProfile.substring(1)}"
+} else {
+    ""
+}
+val userProfileOnDriveE = if (userProfile.matches(Regex("^[A-Za-z]:.*"))) {
+    "E${userProfile.substring(1)}"
+} else {
+    ""
+}
+
+val googleServicesCandidates = listOfNotNull(
+    configuredGoogleServicesPath.takeIf { it.isNotBlank() },
+    "$userProfile/Downloads/google-services.json".takeIf { userProfile.isNotBlank() },
+    "$userProfileOnDriveD/Downloads/google-services.json".takeIf { userProfileOnDriveD.isNotBlank() },
+    "$userProfileOnDriveE/Downloads/google-services.json".takeIf { userProfileOnDriveE.isNotBlank() },
+)
+
+if (!appGoogleServicesFile.exists()) {
+    val source = googleServicesCandidates
+        .map { file(it) }
+        .firstOrNull { it.exists() }
+    if (source != null) {
+        source.copyTo(appGoogleServicesFile, overwrite = true)
+        logger.lifecycle("Copied google-services.json from ${source.absolutePath}")
+    }
+}
+
+val hasGoogleServicesJson = appGoogleServicesFile.exists()
 
 android {
     namespace = "com.mordechaius.maximus"
@@ -30,6 +62,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Required by flutter_local_notifications (and other libs) for Java 8+ APIs on older Android.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -73,4 +107,15 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
+if (!hasGoogleServicesJson) {
+    logger.warn("google-services.json not found. Set GOOGLE_SERVICES_JSON_PATH or place the file in Downloads. Disabling Google Services tasks for this local build.")
+    tasks.matching { it.name.contains("GoogleServices", ignoreCase = true) }.configureEach {
+        enabled = false
+    }
 }
