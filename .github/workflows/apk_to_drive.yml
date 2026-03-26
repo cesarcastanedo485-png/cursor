@@ -34,6 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    # Flutter app and android/ live under cursor_mobile/ in this monorepo.
+    defaults:
+      run:
+        working-directory: cursor_mobile
 
     steps:
       - name: Checkout
@@ -155,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: apk-${{ github.sha }}
-          path: ${{ env.SHA_APK_PATH }}
+          path: cursor_mobile/${{ env.SHA_APK_PATH }}
           if-no-files-found: error
 
       - name: Create versioned GitHub Release
@@ -177,7 +181,7 @@ jobs:
             ### Changes
             - In-app: **Settings → About** lists the APK change log shipped in this build (`lib/core/apk_release_log.dart`).
             - Repo: see commit history on GitHub for full diffs.
-          files: ${{ env.VERSIONED_APK_PATH }}
+          files: cursor_mobile/${{ env.VERSIONED_APK_PATH }}
           draft: false
           prerelease: false
         env:
@@ -201,7 +205,7 @@ jobs:
             Download the APK below and install on your Android device.
 
             > **Note:** This is the latest build. For versioned releases, see [Releases](https://github.com/${{ github.repository }}/releases).
-          files: ${{ env.DRIVE_APK_PATH }}
+          files: cursor_mobile/${{ env.DRIVE_APK_PATH }}
           draft: false
           update: true
         env:
