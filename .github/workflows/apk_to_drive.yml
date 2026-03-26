@@ -7,17 +7,20 @@ on:
   workflow_call:
     inputs:
       app_name:
+        type: string
         description: 'App display name for releases'
         required: false
         default: 'Mordechaius Maximus'
       apk_filename:
+        type: string
         description: 'APK filename for install/download (e.g. MordechaiusMaximus-install.apk)'
         required: false
         default: 'MordechaiusMaximus-install.apk'
       upload_to_drive:
+        type: boolean
         description: 'Upload to Google Drive (false for GitHub-only flow)'
         required: false
-        default: 'true'
+        default: true
 
 concurrency:
   group: apk-to-drive-${{ github.ref }}
