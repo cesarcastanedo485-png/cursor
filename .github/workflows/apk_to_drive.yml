@@ -125,7 +125,15 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo "TAG_NAME=v$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "Extracted version: $VERSION (name: $VERSION_NAME, code: $VERSION_CODE)"
-
+      - name: Restore Firebase google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -z "${GOOGLE_SERVICES_JSON_BASE64}" ]; then
+            echo "Missing GOOGLE_SERVICES_JSON_BASE64 secret"
+            exit 1
+          fi
+          echo "${GOOGLE_SERVICES_JSON_BASE64}" | base64 -d > android/app/google-services.json
       - name: Build release APK
         run: flutter build apk --release
 
