@@ -1,0 +1,114 @@
+{
+  "name": "mordecai-maximus",
+  "displayName": "Mordecai Maximus",
+  "description": "Receive agent tasks from phone and run them in Cursor Composer. Saves Cloud API tokens.",
+  "version": "0.1.0",
+  "publisher": "mordecai",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Mordecai Maximus",
+      "properties": {
+        "mordecai.maximusUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Mordecai server base URL (e.g. https://your-tunnel.trycloudflare.com)"
+        },
+        "mordecai.bridgeSecret": {
+          "type": "string",
+          "default": "",
+          "description": "Bridge secret (must match MORDECAI_BRIDGE_SECRET on server)"
+        },
+        "mordecai.pollIntervalSeconds": {
+          "type": "number",
+          "default": 20,
+          "description": "Seconds between polling for new tasks"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mordecai",
+          "title": "Mordecai",
+          "icon": "$(rocket)"
+        }
+      ]
+    },
+    "views": {
+      "mordecai": [
+        {
+          "id": "mordecaiTasks",
+          "name": "Tasks"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mordecai.copyPrompt",
+        "title": "Copy prompt"
+      },
+      {
+        "command": "mordecai.runInComposer",
+        "title": "Run in Composer"
+      },
+      {
+        "command": "mordecai.markDone",
+        "title": "Mark done"
+      },
+      {
+        "command": "mordecai.reportError",
+        "title": "Report error"
+      },
+      {
+        "command": "mordecai.refreshTasks",
+        "title": "Refresh tasks"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "mordecai.copyPrompt",
+          "when": "view == mordecaiTasks && viewItem == task"
+        },
+        {
+          "command": "mordecai.runInComposer",
+          "when": "view == mordecaiTasks && viewItem == task"
+        },
+        {
+          "command": "mordecai.markDone",
+          "when": "view == mordecaiTasks && viewItem == task"
+        },
+        {
+          "command": "mordecai.reportError",
+          "when": "view == mordecaiTasks && viewItem == task"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "mordecai.refreshTasks",
+          "when": "view == mordecaiTasks"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

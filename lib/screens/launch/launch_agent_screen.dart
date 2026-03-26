@@ -8,7 +8,8 @@ import '../../../core/agent_intent.dart';
 import '../../../core/constants.dart';
 import '../../../data/models/launch_request.dart';
 import '../../../providers/agents_provider.dart';
-import '../../../providers/backend_mode_provider.dart';
+import '../../../providers/bridge_task_provider.dart';
+import '../../../providers/preferences_provider.dart';
 import '../../../providers/shell_providers.dart';
 import '../../widgets/error_view.dart';
 
@@ -27,6 +28,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
   String _model = 'auto';
   AgentIntent _intent = AgentIntent.normal;
   bool _autoCreatePr = false;
+  bool _useDesktop = true;
   String? _imagePath;
   bool _launching = false;
   String? _launchError;
@@ -57,6 +59,19 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
 
   // auto = Cursor's default (cost-efficient). Avoid expensive models for simple requests.
   static const _models = ['auto', 'claude-4-sonnet', 'claude-4-opus', 'gpt-4o-mini'];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDesktopPref());
+  }
+
+  Future<void> _loadDesktopPref() async {
+    try {
+      final prefs = await ref.read(preferencesProvider.future);
+      if (mounted) setState(() => _useDesktop = prefs.preferDesktopBridge);
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -121,8 +136,51 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
       _repoController.text = repo;
     });
     final branch = _branchController.text.trim();
-    final imageB64 = await _imageToBase64();
     final effectivePrompt = buildPromptForIntent(_intent, prompt);
+
+    // Use desktop bridge when configured and selected (saves Cloud API tokens)
+    final prefs = await ref.read(preferencesProvider.future);
+    final useDesktop = _useDesktop &&
+        prefs.mordecaiCommissionsUrl.trim().isNotEmpty &&
+        prefs.preferDesktopBridge;
+
+    if (useDesktop) {
+      final bridgeAsync = await ref.read(bridgeTaskServiceProvider.future);
+      final fcmToken = await ref.read(fcmTokenProvider.future);
+      if (bridgeAsync != null) {
+        final result = await bridgeAsync.submitTask(
+          prompt: effectivePrompt,
+          repoUrl: repo,
+          branch: branch.isEmpty ? null : branch,
+          intent: _intent.name,
+          fcmToken: fcmToken,
+        );
+        if (!mounted) return;
+        setState(() {
+          _launching = false;
+          _promptController.clear();
+          _imagePath = null;
+        });
+        if (result.taskId != null) {
+          setState(() => _launchedAgentId = null);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Task sent to desktop. Open Cursor to run. You\'ll get a notification when done.',
+                ),
+              ),
+            );
+          }
+        } else {
+          setState(() => _launchError = result.error ?? 'Desktop bridge failed');
+        }
+        return;
+      }
+    }
+
+    // Fall back to Cloud API
+    final imageB64 = await _imageToBase64();
     final request = LaunchRequest(
       repoUrl: repo,
       prompt: effectivePrompt,
@@ -161,50 +219,25 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
       }
     });
 
-    final private = ref.watch(appBackendModeProvider) == AppBackendMode.privateLocal;
     final pre = ref.watch(launchRepoPrefillProvider);
     final intentPrefill = ref.watch(launchIntentPrefillProvider);
-    if (!private && pre != null && pre.isNotEmpty && _appliedPrefill != pre) {
+    if (pre != null && pre.isNotEmpty && _appliedPrefill != pre) {
       _appliedPrefill = pre;
       _repoController.text = pre;
       Future.microtask(() {
         if (mounted) ref.read(launchRepoPrefillProvider.notifier).state = null;
       });
     }
-    if (!private && intentPrefill != null && _intent != intentPrefill) {
+    if (intentPrefill != null && _intent != intentPrefill) {
       _intent = intentPrefill;
       Future.microtask(() {
         if (mounted) ref.read(launchIntentPrefillProvider.notifier).state = null;
       });
     }
 
-    if (private) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Launch Agent')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.cloud_off_rounded, size: 64, color: Theme.of(context).colorScheme.outline),
-                const SizedBox(height: 16),
-                Text(
-                  'Cursor Cloud agents run on Cursor’s cloud. Switch to Cursor Cloud to launch an agent from a repo.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => ref.read(backendStateProvider.notifier).switchToCloud(),
-                  child: const Text('Switch to Cursor Cloud'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    final prefsAsync = ref.watch(preferencesProvider);
+    final mordecaiUrl = prefsAsync.valueOrNull?.mordecaiCommissionsUrl.trim() ?? '';
+    final showDesktopOption = mordecaiUrl.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Launch Agent')),
@@ -315,6 +348,23 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
               onChanged: (v) => setState(() => _model = v ?? 'auto'),
             ),
             const SizedBox(height: 12),
+            if (showDesktopOption) ...[
+              SwitchListTile(
+                title: const Text('Use desktop (saves tokens)'),
+                subtitle: const Text(
+                  'Send to your Cursor on desktop instead of Cloud API. Requires Mordecai + desktop extension.',
+                ),
+                value: _useDesktop,
+                onChanged: (v) {
+                  setState(() => _useDesktop = v);
+                  ref.read(preferencesProvider.future).then((prefs) async {
+                    await prefs.setPreferDesktopBridge(v);
+                    ref.invalidate(preferencesProvider);
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
             SwitchListTile(
               title: const Text('Create pull request when done'),
               subtitle: const Text(

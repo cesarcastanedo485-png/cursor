@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/agent_intent.dart';
 
-/// Main shell: 0 Cloud Agents, 1 Private AIs, 2 Capabilities.
+/// Main shell: 0 Cloud Agents, 1 Capabilities, 2 Commissions.
 final mainShellTabProvider = StateProvider<int>((ref) => 0);
 
 /// Cloud Agents sub-tab: 0 Home, 1 Launch, 2 Repos, 3 Settings.
