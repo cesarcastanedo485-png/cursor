@@ -83,10 +83,13 @@ class ApiKeyNotifier extends StateNotifier<AsyncValue<String?>> {
   }
 }
 
-/// True if user has completed onboarding (has valid key and passed test or saved).
+/// True if user has completed onboarding (saved key or explicit flag).
 final onboardingDoneProvider = FutureProvider<bool>((ref) async {
   final storage = ref.watch(secureStorageProvider);
-  return storage.isOnboardingDone();
+  final done = await storage.isOnboardingDone();
+  final key = await storage.getApiKey();
+  final hasKey = key != null && key.trim().isNotEmpty;
+  return done || hasKey;
 });
 
 /// Convenience: is API configured (key present).
@@ -110,7 +113,15 @@ class OnboardingStateNotifier extends StateNotifier<AsyncValue<bool>> {
 
   Future<void> _load() async {
     try {
-      final done = await _storage.isOnboardingDone();
+      final storedDone = await _storage.isOnboardingDone();
+      final key = await _storage.getApiKey();
+      final hasKey = key != null && key.trim().isNotEmpty;
+      // Prefer saved key: if the key persisted but the onboarding flag did not
+      // (upgrade, storage glitch, or partial clear), skip asking again.
+      if (hasKey && !storedDone) {
+        await _storage.setOnboardingDone(true);
+      }
+      final done = storedDone || hasKey;
       state = AsyncValue.data(done);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
