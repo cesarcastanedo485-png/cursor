@@ -1,0 +1,35 @@
+name: Server CI
+
+on:
+  push:
+    paths:
+      - "server.js"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "test/**"
+      - ".github/workflows/server_ci.yml"
+  pull_request:
+    paths:
+      - "server.js"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "test/**"
+      - ".github/workflows/server_ci.yml"
+
+jobs:
+  server-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install
+        run: npm ci
+      - name: Test
+        run: npm test
