@@ -207,7 +207,7 @@ jobs:
           cache: "pip"
 
       - name: "Upload APK to Google Drive"
-        if: github.ref == 'refs/heads/main' && env.UPLOAD_TO_DRIVE != 'false'
+        if: (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && env.UPLOAD_TO_DRIVE != 'false'
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
           GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
