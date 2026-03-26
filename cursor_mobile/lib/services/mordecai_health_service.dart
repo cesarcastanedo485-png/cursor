@@ -136,7 +136,7 @@ class MordecaiHealthService {
   static bool _isPrivateIpv4(String host) {
     if (!_ipv4Regex.hasMatch(host)) return false;
     final parts = host.split('.').map(int.tryParse).toList();
-    if (parts.length != 4 || parts.any((p) => p == null || p! < 0 || p > 255)) {
+    if (parts.length != 4 || parts.any((p) => p == null || p < 0 || p > 255)) {
       return false;
     }
     final a = parts[0]!;

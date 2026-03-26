@@ -12,6 +12,7 @@ import '../../../providers/agents_provider.dart';
 import '../../../providers/bridge_task_provider.dart';
 import '../../../providers/preferences_provider.dart';
 import '../../../providers/shell_providers.dart';
+import '../../../services/bridge_task_service.dart';
 import '../../widgets/error_view.dart';
 
 /// Launch agent: repo URL, prompt, options, POST /v0/agents.
@@ -190,6 +191,7 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
       if (!mounted) return;
       if (result?.taskId != null) {
         await bridgeService.reportLaunchRoute(path: 'desktop');
+        if (!mounted) return;
         setState(() {
           _launching = false;
           _promptController.clear();

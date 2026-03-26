@@ -115,7 +115,8 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
             });
           },
           onWebResourceError: (error) {
-            if (!mounted || !error.isForMainFrame) return;
+            if (!mounted) return;
+            if (error.isForMainFrame == false) return;
             final details = _classifyWebError(
               description: error.description,
               errorCode: error.errorCode,
