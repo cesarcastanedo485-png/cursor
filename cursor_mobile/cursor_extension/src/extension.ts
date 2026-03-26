@@ -1,0 +1,160 @@
+import * as vscode from 'vscode';
+import { MordecaiTasksProvider } from './tasksProvider';
+
+let pollInterval: NodeJS.Timeout | null = null;
+
+export function activate(context: vscode.ExtensionContext) {
+  const config = vscode.workspace.getConfiguration('mordecai');
+  const baseUrl = config.get<string>('maximusUrl', '').trim();
+
+  if (!baseUrl) {
+    vscode.window.showInformationMessage(
+      'Mordecai Maximus: Set mordecai.maximusUrl in Settings to receive tasks from your phone.',
+    );
+    return;
+  }
+
+  // Ensure we have a device ID (persisted)
+  let deviceId = context.globalState.get<string>('mordecai.deviceId');
+  if (!deviceId) {
+    deviceId = 'ext-' + Math.random().toString(36).slice(2, 15);
+    context.globalState.update('mordecai.deviceId', deviceId);
+  }
+
+  const tasksProvider = new MordecaiTasksProvider(baseUrl, deviceId, context);
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('mordecaiTasks', tasksProvider),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.refreshTasks', () => {
+      tasksProvider.refresh();
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.runtimeStatus', async () => {
+      try {
+        const status = await tasksProvider.getRuntimeStatus();
+        const tunnel = status?.state?.tunnel;
+        vscode.window.showInformationMessage(
+          `Tunnel running: ${tunnel?.running ? 'yes' : 'no'}${tunnel?.publicUrl ? ` | ${tunnel.publicUrl}` : ''}`,
+        );
+      } catch (e) {
+        vscode.window.showErrorMessage(`Runtime status failed: ${e}`);
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.runtimeStartTunnel', async () => {
+      try {
+        const out = await tasksProvider.startTunnelRuntime();
+        const url = out?.publicUrl || out?.state?.tunnel?.publicUrl || '';
+        if (url) {
+          await vscode.workspace
+            .getConfiguration('mordecai')
+            .update('maximusUrl', url, vscode.ConfigurationTarget.Global);
+          vscode.window.showInformationMessage(`Tunnel started. maximusUrl updated: ${url}`);
+        } else {
+          vscode.window.showInformationMessage('Tunnel start requested. URL not ready yet; run Runtime status in a few seconds.');
+        }
+      } catch (e) {
+        vscode.window.showErrorMessage(`Start tunnel failed: ${e}`);
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.runtimeStopTunnel', async () => {
+      try {
+        await tasksProvider.stopTunnelRuntime();
+        vscode.window.showInformationMessage('Tunnel stop requested.');
+      } catch (e) {
+        vscode.window.showErrorMessage(`Stop tunnel failed: ${e}`);
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.copyPrompt', (item: TaskItem) => {
+      if (item.task) {
+        vscode.env.clipboard.writeText(item.task.prompt);
+        vscode.window.showInformationMessage(
+          'Prompt copied. Paste in Composer (Ctrl+Shift+I / Cmd+Shift+I) to run.',
+        );
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.runInComposer', async (item: TaskItem) => {
+      if (!item.task) return;
+      try {
+        const commands = await vscode.commands.getCommands();
+        const composerCmd = commands.find(
+          (c) =>
+            c.includes('composer') ||
+            c.includes('aider') ||
+            c === 'cursor.chat.new' ||
+            c === 'workbench.action.quickOpen',
+        );
+        vscode.env.clipboard.writeText(item.task.prompt);
+        if (composerCmd) {
+          await vscode.commands.executeCommand(composerCmd);
+        }
+        vscode.window.showInformationMessage(
+          'Prompt copied. Paste in Composer (Ctrl+Shift+I) to run.',
+        );
+      } catch {
+        vscode.env.clipboard.writeText(item.task.prompt);
+        vscode.window.showInformationMessage(
+          'Prompt copied. Paste in Composer (Ctrl+Shift+I / Cmd+Shift+I) to run.',
+        );
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.markDone', async (item: TaskItem) => {
+      if (!item.task) return;
+      await tasksProvider.markDone(item.task.taskId);
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('mordecai.reportError', async (item: TaskItem) => {
+      if (!item.task) return;
+      const msg = await vscode.window.showInputBox({
+        prompt: 'Error message (optional)',
+        placeHolder: 'What went wrong?',
+      });
+      await tasksProvider.reportError(item.task.taskId, msg || '');
+    }),
+  );
+
+  const pollSeconds = config.get<number>('pollIntervalSeconds', 20);
+  const pollMs = Math.max(10, pollSeconds) * 1000;
+  pollInterval = setInterval(() => tasksProvider.poll(), pollMs);
+  tasksProvider.poll();
+}
+
+export function deactivate() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}
+
+export interface BridgeTask {
+  taskId: string;
+  prompt: string;
+  repoUrl: string;
+  branch?: string;
+  intent?: string;
+}
+
+export interface TaskItem {
+  task?: BridgeTask;
+  label: string;
+}

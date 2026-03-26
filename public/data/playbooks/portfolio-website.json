@@ -1,0 +1,57 @@
+{
+  "id": "portfolio-website",
+  "name": "Portfolio Website",
+  "techStack": "Next.js 15 + TypeScript + Tailwind CSS + Framer Motion",
+  "defaultWorkspacePrefix": "./commissions/[company-slug]-portfolio-nextjs",
+  "phases": [
+    {
+      "id": "1",
+      "name": "Project Setup",
+      "description": "Create base app structure and starter pages.",
+      "deliverables": ["package.json", "src/app layout", "home page shell"],
+      "promptTemplate": "Create a Next.js 15 portfolio site scaffold.\n\nClient info:\n{{clientInfo}}\n\nCreate a clean project with TypeScript, Tailwind, src/app layout, globals.css, and a minimal home page that uses the client company name."
+    },
+    {
+      "id": "2",
+      "name": "Branding & Hero",
+      "description": "Create visual style, hero section, and CTA.",
+      "deliverables": ["hero section", "typography system", "CTA buttons"],
+      "promptTemplate": "Implement branding and hero for this portfolio.\n\nClient info:\n{{clientInfo}}\n\nUse the project name, description, and CTA text. Build a polished hero, clear value proposition, and mobile-first responsive layout."
+    },
+    {
+      "id": "3",
+      "name": "Projects Grid",
+      "description": "Build a projects/work section with reusable cards.",
+      "deliverables": ["projects data", "project card component", "projects section"],
+      "promptTemplate": "Add a projects section for the portfolio.\n\nClient info:\n{{clientInfo}}\n\nCreate reusable project card components, sample project data, and a responsive grid section with hover effects."
+    },
+    {
+      "id": "4",
+      "name": "About & Services",
+      "description": "Add about content and service offerings section.",
+      "deliverables": ["about section", "services list", "icon cards"],
+      "promptTemplate": "Add About and Services sections.\n\nClient info:\n{{clientInfo}}\n\nCreate concise copy blocks and responsive cards for service offerings aligned with the project's tone."
+    },
+    {
+      "id": "5",
+      "name": "Contact & Lead Capture",
+      "description": "Create contact form and contact CTA area.",
+      "deliverables": ["contact form UI", "validation", "thank-you state"],
+      "promptTemplate": "Implement contact section and lead capture form.\n\nClient info:\n{{clientInfo}}\n\nCreate form fields, validation, and a user-friendly success state. Keep implementation simple and production-ready."
+    },
+    {
+      "id": "6",
+      "name": "Animation & UX Polish",
+      "description": "Add subtle motion and smooth interactions.",
+      "deliverables": ["section reveals", "button micro-interactions", "scroll polish"],
+      "promptTemplate": "Polish UX and motion.\n\nClient info:\n{{clientInfo}}\n\nUse tasteful animations (Framer Motion), improve spacing/typography consistency, and ensure mobile performance is good."
+    },
+    {
+      "id": "7",
+      "name": "Final Review & Handoff",
+      "description": "Review accessibility, links, and deployment notes.",
+      "deliverables": ["QA pass", "README deployment steps", "final cleanup"],
+      "promptTemplate": "Run a final review and handoff pass.\n\nClient info:\n{{clientInfo}}\n\nCheck broken links, heading order, basic accessibility, responsive behavior, and add concise README run/deploy instructions."
+    }
+  ]
+}

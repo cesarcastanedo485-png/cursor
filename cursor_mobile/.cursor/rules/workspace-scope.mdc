@@ -1,0 +1,22 @@
+---
+description: Mordechaius Maximus project scope — not the tarot app
+alwaysApply: true
+---
+
+# Workspace Scope: Mordechaius Maximus
+
+This workspace is **Mordechaius Maximus** (package: `mordechaius_maximus`, app ID: `com.mordechaius.maximus`).
+
+**Project locations (Windows):** This Flutter tree is named `cursor_mobile` but may live under different drives:
+
+- **E:** — Common for Cursor backups, e.g. `E:\CursorBackup_2026-03-22\mordecai-maximus\cursor_mobile` (this machine’s layout).
+- **C:** — Classic clone paths, e.g. `C:\Users\<you>\cursor_mobile` or `C:\Users\<you>\mordechaius-maximus`.
+- **D:** — Often used for the **Mordecai Node server** commission output via `COMMISSIONS_WORKSPACE` (e.g. `D:\MordecaiCommissions` in the **server** repo’s `.env`) — not the Flutter app root.
+
+**What it is:** Flutter app (Android & iOS) for Cursor Pro Cloud Agents, Capabilities (SMS, OBS, etc.), and Commissions (Mordecai WebView + health check). APK output: `MordechaiusMaximus-install.apk`.
+
+**Do NOT confuse with:**
+- The tarot card reading app (`Documents\tarrot`) — different project, different codebase
+- Generic "cursor mobile" — this is Mordechaius Maximus specifically
+
+When giving advice, configuration, or code changes, scope everything to Mordechaius Maximus and this `cursor_mobile` codebase only.

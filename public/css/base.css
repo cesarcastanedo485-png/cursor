@@ -1,0 +1,83 @@
+/**
+ * Mordecai's Maximus — minimal base styles
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: #0d1117;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  min-height: 100vh;
+}
+
+.portal-app {
+  min-height: 100vh;
+}
+
+.mordecai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+.mordecai-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.mordecai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mordecai-push-btn {
+  padding: 0.35rem 0.75rem;
+  background: #238636;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mordecai-push-btn:hover {
+  background: #2ea043;
+}
+
+.mordecai-push-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mordecai-push-btn.secondary {
+  background: #21262d;
+  color: #c9d1d9;
+}
+
+.mordecai-push-btn.secondary:hover:not(:disabled) {
+  background: #30363d;
+}
+
+.mordecai-push-status {
+  font-size: 0.75rem;
+  color: #8b949e;
+}

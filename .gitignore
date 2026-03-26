@@ -1,0 +1,25 @@
+node_modules/
+.env
+config/agents.json
+.DS_Store
+*.log
+.env.local
+.env.*.local
+
+# Local / stray data
+chatlings-db.json
+*.apk
+
+# Flutter app (cursor_mobile) — build & machine-local
+cursor_mobile/.dart_tool/
+cursor_mobile/build/
+cursor_mobile/.flutter-plugins-dependencies
+cursor_mobile/android/.gradle/
+cursor_mobile/android/.kotlin/
+cursor_mobile/android/local.properties
+cursor_mobile/android/key.properties
+cursor_mobile/**/*.jks
+cursor_mobile/**/*.keystore
+cursor_mobile/.pub/
+cursor_mobile/ios/Flutter/ephemeral/
+cursor_mobile/macos/Flutter/ephemeral/

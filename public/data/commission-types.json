@@ -1,0 +1,13 @@
+{
+  "websites": {
+    "types": [
+      { "name": "E-commerce", "playbookId": "ecommerce-website" },
+      { "name": "Scheduling", "playbookId": "scheduling-website" },
+      { "name": "Blog", "playbookId": "blog-website" },
+      { "name": "Portfolio", "playbookId": "portfolio-website" }
+    ]
+  },
+  "apps": {
+    "types": []
+  }
+}

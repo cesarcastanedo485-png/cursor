@@ -1,0 +1,25 @@
+{
+  "name": "mordecai-maximus",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Remote control Cursor AI from your phone — push notifications for agent completion, errors, and GitHub PR reviews",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "gen-icons": "node scripts/gen-icons.js",
+    "test-push": "node scripts/test-push.js",
+    "commissions:preflight": "node scripts/commissions-preflight.mjs",
+    "test": "node --test ./test/bridgeTasks.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "jimp": "^1.6.0"
+  }
+}
