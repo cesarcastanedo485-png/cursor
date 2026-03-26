@@ -1,55 +1,63 @@
-# Miscellaneous
-*.class
+# Mordecai (Node) + local secrets
+node_modules/
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+config/agents.json
+
+# Local / stray data
+chatlings-db.json
+*.apk
+
+# OS / editor
+.DS_Store
 *.log
+*.class
 *.pyc
 *.swp
-.DS_Store
 .atom/
-.build/
-.buildlog/
 .history
 .svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+# IntelliJ
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# Flutter/Dart/Pub — app under cursor_mobile/
 **/doc/api/
-**/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
-/coverage/
-
-# Symbolication related
+coverage/
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Flutter tooling (from template; harmless at repo root)
+.build/
+.buildlog/
+.migrate_working_dir/
+.swiftpm/
 
-# Local / secrets (do not commit)
-local.properties
-android/key.properties
-*.jks
-*.keystore
-.env
-.env.*
-!.env.example
-node_modules/
+# Android Studio / Gradle (monorepo paths)
+cursor_mobile/.dart_tool/
+cursor_mobile/build/
+cursor_mobile/.flutter-plugins-dependencies
+cursor_mobile/android/.gradle/
+cursor_mobile/android/.kotlin/
+cursor_mobile/android/local.properties
+cursor_mobile/android/key.properties
+cursor_mobile/**/*.jks
+cursor_mobile/**/*.keystore
+cursor_mobile/android/app/debug
+cursor_mobile/android/app/profile
+cursor_mobile/android/app/release
+cursor_mobile/.pub/
+cursor_mobile/ios/Flutter/ephemeral/
+cursor_mobile/macos/Flutter/ephemeral/
+cursor_mobile/**/ios/Flutter/.last_build_id

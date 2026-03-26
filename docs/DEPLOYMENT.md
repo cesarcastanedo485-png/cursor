@@ -112,3 +112,20 @@ Restart `npm start`. New commissions get a subfolder under that path (playbook n
 - Tunnel URL to your web app dev server port
 
 Commissions → Phase progress now includes a **Phone preview (LAN / tunnel)** helper where you can save/open/copy/QR this URL.
+
+## Post-update blank-screen smoke checklist
+
+Run this quick check after every app or web update:
+
+1. **Commissions URL normalization**
+   - In mobile Settings, paste a URL ending with `/health` or `/api/commissions/health`.
+   - Tap save, then confirm it is normalized back to the base URL.
+2. **Health API**
+   - Open `https://YOUR_MORDECAI_URL/health` and verify `{ "ok": true }`.
+3. **Mobile WebView load**
+   - Open Commissions in the app.
+   - Confirm the web app loads (or you get a readable error panel with Retry).
+   - If URL is HTTP, expect warning and switch to HTTPS tunnel URL.
+4. **Service worker update path (browser)**
+   - Reload `https://YOUR_MORDECAI_URL` and confirm the app shell + scripts load.
+   - If there is an update toast, apply it and verify the page reloads into the new version.

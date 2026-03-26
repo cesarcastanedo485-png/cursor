@@ -1,0 +1,222 @@
+name: Build APK and Upload to Google Drive
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      app_name:
+        type: string
+        description: 'App display name for releases'
+        required: false
+        default: 'Mordechaius Maximus'
+      apk_filename:
+        type: string
+        description: 'APK filename for install/download (e.g. MordechaiusMaximus-install.apk)'
+        required: false
+        default: 'MordechaiusMaximus-install.apk'
+      upload_to_drive:
+        type: string
+        description: 'Upload to Google Drive (false for GitHub-only flow)'
+        required: false
+        default: 'true'
+
+concurrency:
+  group: apk-to-drive-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set workflow inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_call" ]; then
+            APP_NAME="${{ inputs.app_name }}"
+            APK_FILENAME="${{ inputs.apk_filename }}"
+            UPLOAD_TO_DRIVE="${{ inputs.upload_to_drive }}"
+          else
+            APP_NAME="Mordechaius Maximus"
+            APK_FILENAME="MordechaiusMaximus-install.apk"
+            UPLOAD_TO_DRIVE="true"
+          fi
+          APP_NAME="${APP_NAME:-Mordechaius Maximus}"
+          APK_FILENAME="${APK_FILENAME:-MordechaiusMaximus-install.apk}"
+          UPLOAD_TO_DRIVE="${UPLOAD_TO_DRIVE:-true}"
+          APK_BASE="${APK_FILENAME%-install.apk}"
+          [ "$APK_BASE" = "$APK_FILENAME" ] && APK_BASE="${APK_FILENAME%.apk}"
+          echo "APP_NAME=${APP_NAME}" >> "$GITHUB_ENV"
+          echo "APK_FILENAME=${APK_FILENAME}" >> "$GITHUB_ENV"
+          echo "UPLOAD_TO_DRIVE=${UPLOAD_TO_DRIVE}" >> "$GITHUB_ENV"
+          echo "APK_BASE=${APK_BASE}" >> "$GITHUB_ENV"
+          echo "App: ${APP_NAME}, APK: ${APK_FILENAME}, Drive: ${UPLOAD_TO_DRIVE}"
+
+      - name: APK pipeline — log header (read this first in Actions)
+        shell: bash
+        run: |
+          echo "=========================================="
+          echo "  ${{ env.APP_NAME }} — APK build job"
+          echo "=========================================="
+          echo "PWD=$(pwd)"
+          grep -E '^version:' pubspec.yaml || true
+          echo "Tip: user-facing APK notes live in-app at Settings → About"
+          echo "     (source: lib/core/apk_release_log.dart)"
+          echo "=========================================="
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Write Android signing files
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "${ANDROID_KEYSTORE_BASE64}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD}" ] && [ -n "${ANDROID_KEY_ALIAS}" ] && [ -n "${ANDROID_KEY_PASSWORD}" ]; then
+            # Release build uses -PrequireReleaseSigning=true; keystore must decode or Gradle fails (no debug-signed “release”).
+            if echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > android/upload-keystore.jks; then
+              printf "storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n" \
+                "${ANDROID_KEYSTORE_PASSWORD}" \
+                "${ANDROID_KEY_PASSWORD}" \
+                "${ANDROID_KEY_ALIAS}" > android/key.properties
+              echo "Release signing configured."
+            else
+              echo "Signing secret decode failed. Continuing without release keystore."
+              rm -f android/upload-keystore.jks android/key.properties
+            fi
+          else
+            echo "Signing secrets missing. Build will fail at Gradle (requireReleaseSigning)."
+          fi
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Extract version from pubspec.yaml
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION_NAME=$(echo $VERSION | cut -d'+' -f1)
+          VERSION_CODE=$(echo $VERSION | cut -d'+' -f2)
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "TAG_NAME=v$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "Extracted version: $VERSION (name: $VERSION_NAME, code: $VERSION_CODE)"
+
+      - name: Build release APK
+        # Same upload key every CI build → users can upgrade without uninstalling (see docs/UPDATES.md).
+        run: flutter build apk --release -- -PrequireReleaseSigning=true
+
+      - name: Prepare APK outputs
+        shell: bash
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          SHA_APK_PATH="build/app/outputs/flutter-apk/${APK_BASE}-${GITHUB_SHA:0:7}.apk"
+          VERSIONED_APK_PATH="build/app/outputs/flutter-apk/${APK_BASE}-v${{ steps.version.outputs.VERSION_NAME }}-build${{ steps.version.outputs.VERSION_CODE }}.apk"
+          DRIVE_APK_PATH="build/app/outputs/flutter-apk/${APK_FILENAME}"
+          cp "${APK_PATH}" "${SHA_APK_PATH}"
+          cp "${APK_PATH}" "${VERSIONED_APK_PATH}"
+          cp "${APK_PATH}" "${DRIVE_APK_PATH}"
+          echo "SHA_APK_PATH=${SHA_APK_PATH}" >> "$GITHUB_ENV"
+          echo "VERSIONED_APK_PATH=${VERSIONED_APK_PATH}" >> "$GITHUB_ENV"
+          echo "DRIVE_APK_PATH=${DRIVE_APK_PATH}" >> "$GITHUB_ENV"
+
+      - name: Upload artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ github.sha }}
+          path: ${{ env.SHA_APK_PATH }}
+          if-no-files-found: error
+
+      - name: Create versioned GitHub Release
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG_NAME }}
+          name: ${{ env.APP_NAME }} v${{ steps.version.outputs.VERSION_NAME }} (Build ${{ steps.version.outputs.VERSION_CODE }})
+          body: |
+            ## Version ${{ steps.version.outputs.VERSION_NAME }} (Build ${{ steps.version.outputs.VERSION_CODE }})
+
+            **Commit:** ${{ github.sha }}
+            **Branch:** ${{ github.ref_name }}
+            **Pushed:** ${{ github.event.head_commit.timestamp }}
+
+            ### Installation
+            Download the APK below and install on your Android device.
+
+            ### Changes
+            - In-app: **Settings → About** lists the APK change log shipped in this build (`lib/core/apk_release_log.dart`).
+            - Repo: see commit history on GitHub for full diffs.
+          files: ${{ env.VERSIONED_APK_PATH }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest GitHub Release
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: ${{ env.APP_NAME }} (Latest APK)
+          body: |
+            ## Latest Build
+
+            **Version:** ${{ steps.version.outputs.VERSION_NAME }} (Build ${{ steps.version.outputs.VERSION_CODE }})
+            **Commit:** ${{ github.sha }}
+            **Branch:** ${{ github.ref_name }}
+            **Pushed:** ${{ github.event.head_commit.timestamp }}
+
+            ### Installation
+            Download the APK below and install on your Android device.
+
+            > **Note:** This is the latest build. For versioned releases, see [Releases](https://github.com/${{ github.repository }}/releases).
+          files: ${{ env.DRIVE_APK_PATH }}
+          draft: false
+          update: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python (cached)
+        if: env.UPLOAD_TO_DRIVE != 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: "Upload APK to Google Drive"
+        # Push: only default branches. Manual/reusable runs: always respect UPLOAD_TO_DRIVE.
+        if: env.UPLOAD_TO_DRIVE != 'false' && (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
+          GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
+          GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
+          APK_PATH: ${{ env.DRIVE_APK_PATH }}
+          GDRIVE_TARGET_FILENAME: ${{ env.APK_FILENAME }}
+        run: |
+          pip install --quiet -r requirements.txt
+          python scripts/upload_apk_to_drive.py

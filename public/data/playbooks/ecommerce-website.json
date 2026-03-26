@@ -1,0 +1,64 @@
+{
+  "id": "ecommerce-website",
+  "name": "E-commerce Website",
+  "techStack": "Next.js 15 App Router + TypeScript + Tailwind CSS + shadcn/ui + Framer Motion + Supabase + Drizzle ORM + Zod + Stripe + Vercel-ready",
+  "defaultWorkspacePrefix": "./commissions/[company-slug]-ecommerce-nextjs",
+  "phases": [
+    {
+      "id": "1",
+      "name": "Project Setup",
+      "description": "Create Next.js 15 app structure. Cursor builds this from scratch.",
+      "deliverables": ["package.json", "tsconfig", "src/ structure", "Tailwind"],
+      "promptTemplate": "Create a Next.js 15 app from scratch in the commission workspace.\n\nClient info:\n{{clientInfo}}\n\nStack: Next.js 15 App Router + TypeScript strict + Tailwind + ESLint + app/ and src/ dirs.\n\nCreate: package.json with next, react, react-dom, typescript, tailwindcss, postcss, autoprefixer, eslint, eslint-config-next. Create tsconfig.json, tailwind.config.ts, postcss.config.mjs, next.config.ts. Create src/app/layout.tsx, src/app/page.tsx, src/app/globals.css, src/app/favicon.ico. No create-next-app — write the files directly."
+    },
+    {
+      "id": "2",
+      "name": "Dependencies & Environment",
+      "description": "Add Supabase, Drizzle, shadcn/ui, Stripe, Framer Motion and env config.",
+      "deliverables": ["package.json deps", ".env.example", "tsconfig paths"],
+      "promptTemplate": "Add dependencies and env config to the existing Next.js 15 app.\n\nClient info:\n{{clientInfo}}\n\nStack: Next.js 15 + Supabase + Drizzle ORM + shadcn/ui + Framer Motion + Stripe.\n\nUpdate package.json: add @supabase/supabase-js, drizzle-orm, stripe, framer-motion, zod, class-variance-authority, clsx, tailwind-merge, lucide-react.\nCreate .env.example with: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.\nUpdate tsconfig.json with paths alias @/* for src/."
+    },
+    {
+      "id": "3",
+      "name": "shadcn/ui & Base Layout",
+      "description": "Init shadcn/ui, add root layout with theme provider and nav.",
+      "deliverables": ["components.json", "layout.tsx", "theme provider"],
+      "promptTemplate": "Add shadcn/ui and base layout to the Next.js app.\n\nClient info:\n{{clientInfo}}\n\nCreate src/app/layout.tsx with ThemeProvider, site header/nav with company name from clientInfo, links to / and /products.\nCreate components.json for shadcn (content: src/**/*.{ts,tsx}, style: default, baseColor: slate, cssVariables: true).\nCreate src/components/theme-provider.tsx using next-themes."
+    },
+    {
+      "id": "4",
+      "name": "Supabase Client & Drizzle Schema",
+      "description": "Configure Supabase client and Drizzle schema for products, orders.",
+      "deliverables": ["lib/supabase.ts", "lib/db.ts", "drizzle schema", "drizzle.config.ts"],
+      "promptTemplate": "Add Supabase and Drizzle to the Next.js app.\n\nClient info:\n{{clientInfo}}\n\nCreate src/lib/supabase/client.ts (createBrowserClient) and src/lib/supabase/server.ts (createServerClient).\nCreate src/lib/db/schema.ts with Drizzle: products (id, name, slug, description, price_cents, image_url, created_at), orders (id, user_id, status, total_cents, created_at), order_items (id, order_id, product_id, quantity, price_cents).\nCreate drizzle.config.ts for Postgres."
+    },
+    {
+      "id": "5",
+      "name": "Auth Setup",
+      "description": "Supabase Auth with sign-in, sign-up, middleware.",
+      "deliverables": ["auth callback", "middleware", "sign-in/sign-up pages"],
+      "promptTemplate": "Add Supabase Auth.\n\nClient info:\n{{clientInfo}}\n\nCreate src/app/auth/callback/route.ts for OAuth callback.\nCreate src/middleware.ts to refresh Supabase session.\nCreate src/app/(auth)/sign-in/page.tsx with email/password form using signInWithPassword. Link to sign-up."
+    },
+    {
+      "id": "6",
+      "name": "Products Page & Cart",
+      "description": "Products list from DB, add-to-cart with client state, cart context.",
+      "deliverables": ["products page", "product card", "cart context", "cart UI"],
+      "promptTemplate": "Add products and cart.\n\nClient info:\n{{clientInfo}}\n\nCreate src/app/products/page.tsx (Server Component, fetch products).\nCreate src/components/product-card.tsx (Client, Add to cart).\nCreate src/context/cart-context.tsx with CartProvider, addToCart, removeFromCart, localStorage persist."
+    },
+    {
+      "id": "7",
+      "name": "Checkout with Stripe",
+      "description": "Checkout page, Stripe Checkout Session, webhook.",
+      "deliverables": ["checkout page", "Stripe API route", "webhook handler"],
+      "promptTemplate": "Add Stripe checkout.\n\nClient info:\n{{clientInfo}}\n\nCreate src/app/checkout/page.tsx with cart display and Create checkout button POSTing to /api/checkout.\nCreate src/app/api/checkout/route.ts — Stripe Checkout Session, return { url }.\nCreate src/app/api/webhooks/stripe/route.ts — verify signature, handle checkout.session.completed, create order in Drizzle."
+    },
+    {
+      "id": "8",
+      "name": "Polish & Vercel Config",
+      "description": "Home page hero, footer, vercel.json, env docs.",
+      "deliverables": ["home hero", "footer", "vercel.json", "README deploy"],
+      "promptTemplate": "Final polish and deploy config.\n\nClient info:\n{{clientInfo}}\n\nUpdate src/app/page.tsx — hero with company name, CTA to /products, Framer Motion entrance, footer.\nCreate vercel.json if needed.\nUpdate README.md with Deploy to Vercel, env vars list."
+    }
+  ]
+}

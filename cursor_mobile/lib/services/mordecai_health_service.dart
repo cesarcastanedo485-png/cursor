@@ -4,6 +4,72 @@ import 'package:dio/dio.dart';
 class MordecaiHealthService {
   MordecaiHealthService._();
 
+  static final RegExp _ipv4Regex = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$');
+
+  /// Validated/sanitized URL result for Commissions WebView usage.
+  static MordecaiUrlValidation validateForCommissions(
+    String raw, {
+    bool assumeMobileDevice = true,
+  }) {
+    final normalized = normalizeBaseUrl(raw);
+    if (normalized.isEmpty) {
+      return const MordecaiUrlValidation(
+        normalizedUrl: '',
+        error: 'Enter your Mordecai URL first.',
+      );
+    }
+
+    Uri uri;
+    try {
+      uri = Uri.parse(normalized);
+    } catch (_) {
+      return MordecaiUrlValidation(
+        normalizedUrl: normalized,
+        error: 'Invalid URL format. Use host or full https:// URL.',
+      );
+    }
+
+    final scheme = uri.scheme.toLowerCase();
+    if (scheme != 'http' && scheme != 'https') {
+      return MordecaiUrlValidation(
+        normalizedUrl: normalized,
+        error: 'Unsupported URL scheme "$scheme". Use http or https.',
+      );
+    }
+    if (uri.host.trim().isEmpty) {
+      return MordecaiUrlValidation(
+        normalizedUrl: normalized,
+        error: 'URL is missing a host.',
+      );
+    }
+
+    final host = uri.host.toLowerCase();
+    final isLocalHost =
+        host == 'localhost' || host == '127.0.0.1' || host == '0.0.0.0';
+    final isIpv4 = _ipv4Regex.hasMatch(host);
+    final privateIp = _isPrivateIpv4(host);
+    final isHttp = scheme == 'http';
+    final likelyBlocked = assumeMobileDevice && isHttp;
+
+    String? warning;
+    if (assumeMobileDevice && isLocalHost) {
+      warning =
+          'localhost/127.0.0.1 points to this phone, not your PC. Use your HTTPS tunnel URL.';
+    } else if (likelyBlocked) {
+      warning =
+          'HTTP URLs are often blocked by mobile WebView. Use an HTTPS tunnel URL.';
+    } else if (assumeMobileDevice && isIpv4 && !privateIp) {
+      warning =
+          'Public IP URLs can be unstable on mobile networks. Prefer an HTTPS tunnel URL.';
+    }
+
+    return MordecaiUrlValidation(
+      normalizedUrl: normalized,
+      warning: warning,
+      likelyBlockedOnDevice: likelyBlocked,
+    );
+  }
+
   /// Trim, add scheme if missing, and coerce health endpoint URLs to app base URL.
   static String normalizeBaseUrl(String raw) {
     var u = raw.trim();
@@ -12,7 +78,7 @@ class MordecaiHealthService {
       final lower = u.toLowerCase();
       final local = lower.startsWith('localhost') ||
           lower.startsWith('127.0.0.1') ||
-          RegExp(r'^\d{1,3}(\.\d{1,3}){3}').hasMatch(lower);
+          _ipv4Regex.hasMatch(lower);
       u = local ? 'http://$u' : 'https://$u';
     }
     while (u.endsWith('/')) {
@@ -38,8 +104,9 @@ class MordecaiHealthService {
 
   /// Tries `/api/commissions/health` then `/health` (both return `{ ok: true }` on Mordecai).
   static Future<bool> isReachable(String rawBaseUrl) async {
-    final base = normalizeBaseUrl(rawBaseUrl);
-    if (base.isEmpty) return false;
+    final validation = validateForCommissions(rawBaseUrl);
+    final base = validation.normalizedUrl;
+    if (!validation.isValid || base.isEmpty) return false;
 
     final dio = Dio(
       BaseOptions(
@@ -65,4 +132,36 @@ class MordecaiHealthService {
     }
     return false;
   }
+
+  static bool _isPrivateIpv4(String host) {
+    if (!_ipv4Regex.hasMatch(host)) return false;
+    final parts = host.split('.').map(int.tryParse).toList();
+    if (parts.length != 4 || parts.any((p) => p == null || p! < 0 || p > 255)) {
+      return false;
+    }
+    final a = parts[0]!;
+    final b = parts[1]!;
+    if (a == 10) return true;
+    if (a == 172 && b >= 16 && b <= 31) return true;
+    if (a == 192 && b == 168) return true;
+    if (a == 127) return true;
+    return false;
+  }
+}
+
+class MordecaiUrlValidation {
+  const MordecaiUrlValidation({
+    required this.normalizedUrl,
+    this.error,
+    this.warning,
+    this.likelyBlockedOnDevice = false,
+  });
+
+  final String normalizedUrl;
+  final String? error;
+  final String? warning;
+  final bool likelyBlockedOnDevice;
+
+  bool get isValid => error == null && normalizedUrl.isNotEmpty;
+  bool get hasWarning => (warning ?? '').trim().isNotEmpty;
 }

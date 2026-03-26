@@ -1,0 +1,14 @@
+{
+  "id": "scheduling-website",
+  "name": "Scheduling Website",
+  "techStack": "HTML/CSS/JS + Supabase-ready",
+  "phases": [
+    {
+      "id": "1",
+      "name": "Project Setup",
+      "description": "Create folder structure and base files.",
+      "deliverables": ["folder structure", "base HTML"],
+      "promptTemplate": "Create the initial project structure for a scheduling/appointments website.\n\nClient info:\n{{clientInfo}}\n\nCreate index.html, css/style.css, js/main.js. Minimal structure. Output ONLY the JSON array of file edits."
+    }
+  ]
+}

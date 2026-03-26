@@ -1,0 +1,37 @@
+name: Source ZIP (disabled)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-source-zip:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Build archive name
+        id: vars
+        shell: bash
+        run: |
+          branch="${GITHUB_REF_NAME//\//-}"
+          short_sha="${GITHUB_SHA:0:7}"
+          echo "artifact_name=source-${branch}-${short_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Create source ZIP
+        run: |
+          git archive --format=zip --output "${{ steps.vars.outputs.artifact_name }}.zip" HEAD
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.vars.outputs.artifact_name }}
+          path: ${{ steps.vars.outputs.artifact_name }}.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,4 @@
+# For cursor_desktop_bridge.py
+requests>=2.28.0
+pyperclip>=1.8.0
+plyer>=2.1.0
