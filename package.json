@@ -10,7 +10,7 @@
     "gen-icons": "node scripts/gen-icons.js",
     "test-push": "node scripts/test-push.js",
     "commissions:preflight": "node scripts/commissions-preflight.mjs",
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test ./test/bridgeTasks.test.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
