@@ -8,9 +8,18 @@ import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  var firebaseReady = true;
   if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    } catch (e, st) {
+      firebaseReady = false;
+      debugPrint('Firebase init failed: $e');
+      debugPrintStack(stackTrace: st);
+    }
   }
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  runApp(const ProviderScope(child: App()));
+  if (firebaseReady) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
+  runApp(ProviderScope(child: App(firebaseReady: firebaseReady)));
 }

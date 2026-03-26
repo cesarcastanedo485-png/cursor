@@ -22,7 +22,9 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 /// Root widget: theme, onboarding gate, main shell (Cloud Agents / Capabilities / Commissions).
 class App extends ConsumerWidget {
-  const App({super.key});
+  const App({super.key, this.firebaseReady = true});
+
+  final bool firebaseReady;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,7 +42,9 @@ class App extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRouter.onGenerateRoute,
       home: onboardingAsync.when(
-        data: (done) => done ? const _PostOnboardingGate() : const OnboardingScreen(),
+        data: (done) => done
+            ? _PostOnboardingGate(firebaseReady: firebaseReady)
+            : const OnboardingScreen(),
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
@@ -80,7 +84,9 @@ class App extends ConsumerWidget {
 enum _PostOnboardingState { loading, whatsNew, main }
 
 class _PostOnboardingGate extends ConsumerStatefulWidget {
-  const _PostOnboardingGate();
+  const _PostOnboardingGate({required this.firebaseReady});
+
+  final bool firebaseReady;
 
   @override
   ConsumerState<_PostOnboardingGate> createState() => _PostOnboardingGateState();
@@ -157,21 +163,24 @@ class _PostOnboardingGateState extends ConsumerState<_PostOnboardingGate> {
           onDismiss: _onWhatsNewDismiss,
         );
       case _PostOnboardingState.main:
-        return const _MainShellWithBottomNav();
+        return _MainShellWithBottomNav(firebaseReady: widget.firebaseReady);
     }
   }
 }
 
 class _MainShellWithBottomNav extends ConsumerWidget {
-  const _MainShellWithBottomNav();
+  const _MainShellWithBottomNav({required this.firebaseReady});
+
+  final bool firebaseReady;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Start API-key hydration early so first cloud tab load does not flash auth errors.
     ref.watch(apiBootstrapProvider);
-    return const _NotificationInit(
-      child: _MainShellBody(),
-    );
+    if (!firebaseReady) {
+      return const _MainShellBody();
+    }
+    return const _NotificationInit(child: _MainShellBody());
   }
 }
 
