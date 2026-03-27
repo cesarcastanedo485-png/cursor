@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -72,6 +74,21 @@ class _CommissionsPanel extends StatefulWidget {
 }
 
 class _CommissionsPanelState extends State<_CommissionsPanel> {
+  static const Duration _loadWatchdogDuration = Duration(seconds: 45);
+  static const Duration _domProbeDelay = Duration(milliseconds: 650);
+
+  /// Confirms the Mordecai shell from [index.html] actually rendered (not an empty doc / interstitial).
+  static const String _domProbeJs = r'''(function() {
+  try {
+    var t = document.querySelector(".mordecai-title");
+    if (t) return 1;
+    var b = document.body;
+    if (!b) return 0;
+    var text = (b.innerText || "").trim();
+    return text.length > 80 ? 1 : 0;
+  } catch (e) { return 0; }
+})()''';
+
   _HealthPhase _phase = _HealthPhase.checking;
   bool _forceWebView = false;
   late final WebViewController _controller;
@@ -81,6 +98,72 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
   String? _webErrorUrl;
   bool _webLoading = true;
   int _webProgress = 0;
+  Timer? _loadWatchdog;
+
+  @override
+  void dispose() {
+    _cancelLoadWatchdog();
+    super.dispose();
+  }
+
+  void _cancelLoadWatchdog() {
+    _loadWatchdog?.cancel();
+    _loadWatchdog = null;
+  }
+
+  void _startLoadWatchdog() {
+    _cancelLoadWatchdog();
+    _loadWatchdog = Timer(_loadWatchdogDuration, () {
+      if (!mounted || !_webLoading) return;
+      setState(() {
+        _webLoading = false;
+        _webError =
+            'Page took too long to load. Quick tunnels get a new URL when cloudflared restarts — copy the fresh trycloudflare link into Settings, confirm npm start is running, then retry.';
+        _webErrorCategory = 'Load timeout';
+        _webErrorUrl = _normalizedUrl;
+      });
+    });
+  }
+
+  bool _domProbeLooksLikeMordecai(Object? raw) {
+    if (raw is bool) return raw;
+    if (raw is int) return raw == 1;
+    if (raw is double) return raw == 1.0;
+    if (raw is String) {
+      final s = raw.trim();
+      return s == '1' || s == '"1"' || s == "true";
+    }
+    return false;
+  }
+
+  Future<void> _probeRenderedMordecaiPage() async {
+    await Future<void>.delayed(_domProbeDelay);
+    if (!mounted || _webError != null) return;
+    try {
+      final Object raw = await _controller.runJavaScriptReturningResult(_domProbeJs);
+      if (!mounted || _webError != null) return;
+      if (_domProbeLooksLikeMordecai(raw)) {
+        setState(() => _webLoading = false);
+        return;
+      }
+      setState(() {
+        _webLoading = false;
+        _webError =
+            'The page loaded but Mordecai’s UI did not appear. Typical causes: tunnel or bot checks that block in-app WebViews, expired tunnel URL, or stale cached scripts. Try Open in browser; in the phone browser use “clear site data” for this host; then paste a fresh HTTPS tunnel URL in Settings.';
+        _webErrorCategory = 'Blank or incomplete page';
+        _webErrorUrl = _normalizedUrl;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _webLoading = false;
+        _webError =
+            'Could not verify page content (JavaScript may be blocked). Try Open in browser or update Mordechaius Maximus.';
+        _webErrorCategory = 'Content check failed';
+        _webErrorUrl = _normalizedUrl;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -93,6 +176,7 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
         NavigationDelegate(
           onPageStarted: (url) {
             if (!mounted) return;
+            _startLoadWatchdog();
             setState(() {
               _webLoading = true;
               _webProgress = 0;
@@ -109,13 +193,29 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
           },
           onPageFinished: (_) {
             if (!mounted) return;
+            _cancelLoadWatchdog();
+            setState(() {
+              _webProgress = 100;
+            });
+            _probeRenderedMordecaiPage();
+          },
+          onHttpError: (HttpResponseError error) {
+            if (!mounted) return;
+            _cancelLoadWatchdog();
+            final code = error.response?.statusCode ?? 0;
+            final uri = error.request?.uri.toString() ?? _normalizedUrl;
             setState(() {
               _webLoading = false;
-              _webProgress = 100;
+              _webErrorCategory = 'HTTP $code';
+              _webError = code > 0
+                  ? 'Server returned HTTP $code for the main document. Confirm the Mordecai base URL (your tunnel) matches the machine where `npm start` is running.'
+                  : 'HTTP error while loading the main document.';
+              _webErrorUrl = uri;
             });
           },
           onWebResourceError: (error) {
             if (!mounted) return;
+            _cancelLoadWatchdog();
             if (error.isForMainFrame == false) return;
             final details = _classifyWebError(
               description: error.description,

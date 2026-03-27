@@ -117,7 +117,35 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(event.request));
     return;
   }
-  // Static assets: cache-first with network fallback + cache update.
+
+  // JS/CSS: network-first so a fresh index.html never pairs with stale cached scripts
+  // (a common cause of “blank” PWAs / in-app WebViews after server updates).
+  const isCssOrJs =
+    event.request.method === "GET" &&
+    event.request.url.startsWith(self.location.origin) &&
+    (event.request.url.includes("/js/") || event.request.url.includes("/css/"));
+  if (isCssOrJs) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (
+            res &&
+            res.ok &&
+            event.request.url.startsWith(self.location.origin)
+          ) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, copy).catch(() => {});
+            });
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Other static: cache-first with network fallback + cache update.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

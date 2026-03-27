@@ -35,6 +35,15 @@ class ApkReleaseEntry {
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
     versionLabel: '2.0.9',
+    buildNumber: 21,
+    released: '2026-03-26',
+    changes: [
+      'Commissions WebView: detect “silent blank” loads (no resource error) via DOM probe + 45s watchdog; surface HTTP main-document errors via onHttpError.',
+      'Web PWA: service worker uses network-first for /js/ and /css/ so fresh HTML is not paired with stale cached scripts.',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.9',
     buildNumber: 20,
     released: '2026-03-26',
     changes: [
