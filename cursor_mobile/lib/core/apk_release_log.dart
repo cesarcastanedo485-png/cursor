@@ -35,6 +35,16 @@ class ApkReleaseEntry {
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
     versionLabel: '2.0.9',
+    buildNumber: 22,
+    released: '2026-03-26',
+    changes: [
+      'Commissions WebView: navigation epoch + second DOM probe pass to avoid race/false “blank” after redirects.',
+      'Server: SPA fallback for extensionless paths; service worker install no longer aborts if precache fails.',
+      'Docs: README + lib/README warn that only cursor_mobile/ is the shipped Flutter app (root lib/ is stale).',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.9',
     buildNumber: 21,
     released: '2026-03-26',
     changes: [

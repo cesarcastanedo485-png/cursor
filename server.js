@@ -901,9 +901,17 @@ if (process.env.GITHUB_TOKEN && process.env.GITHUB_REPOS) {
   setInterval(pollGitHubPRs, GITHUB_POLL_MS);
 }
 
-// SPA fallback — serve index for /
-app.get("/", (req, res) => {
-  res.sendFile(path.join(STATIC_ROOT, "index.html"));
+// SPA fallback: after express.static falls through (no file), serve index for HTML
+// navigations (bookmark/deep link) without a file extension. Skips /api and real assets.
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+  const p = req.path || "";
+  if (p.startsWith("/api")) return next();
+  const ext = path.extname(p);
+  if (ext && ext !== ".html") return next();
+  res.sendFile(path.join(STATIC_ROOT, "index.html"), (err) => {
+    if (err) next(err);
+  });
 });
 
 const server = app.listen(PORT, "0.0.0.0", () => {

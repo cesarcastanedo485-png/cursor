@@ -98,3 +98,7 @@ Documentation and scripts mention different drives on purpose:
 - **E:** — Common for **Cursor/workspace backups**, e.g. `E:\CursorBackup_2026-03-22\mordecai-maximus`. The Flutter app sources live in `cursor_mobile\` under that tree when you open the backup.
 
 The **phone Flutter app** (`cursor_mobile`) does not require a specific drive letter; drive examples are for **this PC** and the **Mordecai server** workspace variable.
+
+### Important: one Flutter app tree only
+
+GitHub Actions and Drive releases build from **`cursor_mobile/`** only. There is also a **duplicate** `pubspec.yaml` + `lib/` (and matching `android/` / `ios/`) at the **repo root** that is **not** what CI ships — it is easy to run by mistake and will **not** include the latest Commissions/WebView fixes. See [`lib/README.md`](lib/README.md). **Always open and run `cursor_mobile` for the phone app.**

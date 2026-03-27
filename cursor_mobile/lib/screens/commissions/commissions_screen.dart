@@ -99,6 +99,8 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
   bool _webLoading = true;
   int _webProgress = 0;
   Timer? _loadWatchdog;
+  /// Bumps on each navigation so stale [onPageFinished] probes cannot overwrite UI.
+  int _navEpoch = 0;
 
   @override
   void dispose() {
@@ -136,33 +138,42 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
     return false;
   }
 
-  Future<void> _probeRenderedMordecaiPage() async {
-    await Future<void>.delayed(_domProbeDelay);
-    if (!mounted || _webError != null) return;
+  Future<bool> _runDomProbeOnce() async {
     try {
       final Object raw = await _controller.runJavaScriptReturningResult(_domProbeJs);
-      if (!mounted || _webError != null) return;
-      if (_domProbeLooksLikeMordecai(raw)) {
-        setState(() => _webLoading = false);
-        return;
-      }
-      setState(() {
-        _webLoading = false;
-        _webError =
-            'The page loaded but Mordecai’s UI did not appear. Typical causes: tunnel or bot checks that block in-app WebViews, expired tunnel URL, or stale cached scripts. Try Open in browser; in the phone browser use “clear site data” for this host; then paste a fresh HTTPS tunnel URL in Settings.';
-        _webErrorCategory = 'Blank or incomplete page';
-        _webErrorUrl = _normalizedUrl;
-      });
+      return _domProbeLooksLikeMordecai(raw);
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _webLoading = false;
-        _webError =
-            'Could not verify page content (JavaScript may be blocked). Try Open in browser or update Mordechaius Maximus.';
-        _webErrorCategory = 'Content check failed';
-        _webErrorUrl = _normalizedUrl;
-      });
+      return false;
     }
+  }
+
+  Future<void> _probeRenderedMordecaiPage(int epoch) async {
+    await Future<void>.delayed(_domProbeDelay);
+    if (!mounted || epoch != _navEpoch || _webError != null) return;
+
+    if (await _runDomProbeOnce()) {
+      if (!mounted || epoch != _navEpoch) return;
+      setState(() => _webLoading = false);
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted || epoch != _navEpoch || _webError != null) return;
+
+    if (await _runDomProbeOnce()) {
+      if (!mounted || epoch != _navEpoch) return;
+      setState(() => _webLoading = false);
+      return;
+    }
+
+    if (!mounted || epoch != _navEpoch) return;
+    setState(() {
+      _webLoading = false;
+      _webError =
+          'The page loaded but Mordecai’s UI did not appear. Typical causes: tunnel or bot checks that block in-app WebViews, expired tunnel URL, or stale cached scripts. Try Open in browser; in the phone browser use “clear site data” for this host; then paste a fresh HTTPS tunnel URL in Settings.';
+      _webErrorCategory = 'Blank or incomplete page';
+      _webErrorUrl = _normalizedUrl;
+    });
   }
 
   @override
@@ -176,6 +187,7 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
         NavigationDelegate(
           onPageStarted: (url) {
             if (!mounted) return;
+            _navEpoch++;
             _startLoadWatchdog();
             setState(() {
               _webLoading = true;
@@ -193,11 +205,12 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
           },
           onPageFinished: (_) {
             if (!mounted) return;
+            final epoch = _navEpoch;
             _cancelLoadWatchdog();
             setState(() {
               _webProgress = 100;
             });
-            _probeRenderedMordecaiPage();
+            _probeRenderedMordecaiPage(epoch);
           },
           onHttpError: (HttpResponseError error) {
             if (!mounted) return;

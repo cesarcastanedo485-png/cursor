@@ -36,9 +36,10 @@ const STATIC_ASSETS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      // Never rethrow: a failed precache should not brick SW registration (offline
+      // network during install otherwise leaves the worker “stuck” with no fetch handler).
       return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.error("[SW] Precache failed:", err);
-        throw err;
+        console.error("[SW] Precache failed (continuing install):", err);
       });
     })
   );
