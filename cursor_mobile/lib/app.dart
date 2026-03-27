@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -100,8 +102,11 @@ class _PostOnboardingGateState extends ConsumerState<_PostOnboardingGate> {
 
   Future<void> _check() async {
     try {
-      final info = await PackageInfo.fromPlatform();
-      final prefs = await ref.read(preferencesProvider.future);
+      final info = await PackageInfo.fromPlatform()
+          .timeout(const Duration(seconds: 8));
+      final prefs = await ref
+          .read(preferencesProvider.future)
+          .timeout(const Duration(seconds: 8));
       final lastSeen = prefs.lastSeenVersion;
 
       if (lastSeen == null || lastSeen.isEmpty) {

@@ -1,7 +1,7 @@
 name: mordechaius_maximus
 description: Mordechaius Maximus — Cloud Agents, Capabilities, Commissions.
 publish_to: 'none'
-version: 2.0.9+23
+version: 2.0.9+24
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -46,6 +46,8 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_messaging: ^15.1.6
   flutter_local_notifications: ^18.0.1
+  # Runtime splash control (must match flutter_native_splash config block below)
+  flutter_native_splash: ^2.4.4
 
   # Optional: token sync to Supabase (skip if not using)
   supabase_flutter: ^2.8.3
@@ -58,7 +60,6 @@ dev_dependencies:
   build_runner: ^2.4.13
   json_serializable: ^6.8.0
   flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true

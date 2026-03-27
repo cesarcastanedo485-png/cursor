@@ -35,6 +35,15 @@ class ApkReleaseEntry {
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
     versionLabel: '2.0.9',
+    buildNumber: 24,
+    released: '2026-03-26',
+    changes: [
+      'Fix stuck launch screen: Firebase init capped at 12s; flutter_native_splash.remove after first frame; FCM skipped if Firebase never inits.',
+      'Timeouts on secure storage + PackageInfo + SharedPreferences during startup so a bad KeyStore/prefs state cannot freeze the app on the splash logo.',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.9',
     buildNumber: 23,
     released: '2026-03-26',
     changes: [

@@ -72,6 +72,10 @@ class NotificationService {
 
   /// Init after auth/onboarding. Call from _MainShellWithBottomNav.
   Future<void> init(WidgetRef ref) async {
+    if (Firebase.apps.isEmpty) {
+      debugPrint('[Push] Skipping FCM init — Firebase did not initialize (offline/timeout/failure)');
+      return;
+    }
     // CURSOR: next step — request permission first
     final messaging = FirebaseMessaging.instance;
     final settings = await messaging.requestPermission(

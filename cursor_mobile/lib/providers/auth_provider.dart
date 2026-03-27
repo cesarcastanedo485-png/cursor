@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/local/secure_storage_service.dart';
 import '../services/api_service.dart';
@@ -42,9 +44,13 @@ class ApiKeyNotifier extends StateNotifier<AsyncValue<String?>> {
   Future<void> load() async {
     state = const AsyncValue.loading();
     try {
-      final key = await _storage.getApiKey();
+      final key = await _storage
+          .getApiKey()
+          .timeout(const Duration(seconds: 10));
       state = AsyncValue.data(key);
       if (key != null && key.isNotEmpty) _api.setApiKey(key);
+    } on TimeoutException {
+      state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -110,8 +116,13 @@ class OnboardingStateNotifier extends StateNotifier<AsyncValue<bool>> {
 
   Future<void> _load() async {
     try {
-      final done = await _storage.isOnboardingDone();
+      final done = await _storage
+          .isOnboardingDone()
+          .timeout(const Duration(seconds: 10));
       state = AsyncValue.data(done);
+    } on TimeoutException {
+      // Encrypted prefs can hang on some Android builds; unblock the UI.
+      state = const AsyncValue.data(false);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
