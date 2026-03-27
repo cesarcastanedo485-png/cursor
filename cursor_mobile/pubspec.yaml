@@ -1,7 +1,7 @@
 name: mordechaius_maximus
 description: Mordechaius Maximus — Cloud Agents, Capabilities, Commissions.
 publish_to: 'none'
-version: 2.0.9+24
+version: 2.0.9+25
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -36,6 +36,9 @@ dependencies:
 
   # App / package metadata (About screen, build label)
   package_info_plus: ^8.1.2
+
+  # Store (wire SKUs in Play Console / App Store Connect; default is [StubBillingService])
+  in_app_purchase: ^3.2.0
 
   # Utilities
   intl: ^0.20.2

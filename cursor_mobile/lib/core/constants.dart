@@ -23,6 +23,18 @@ const String githubSecretsUrlTemplate = 'https://github.com/{owner}/{repo}/setti
 /// APK downloads — replace with your repo. Default: cesarcastanedo485-png/cursor.
 const String githubReleasesUrl = 'https://github.com/cesarcastanedo485-png/cursor/releases';
 
+/// GitHub Actions secrets for the repo in [githubReleasesUrl] (owner/repo derived from releases path).
+String get githubDefaultActionsSecretsUrl {
+  try {
+    final u = Uri.parse(githubReleasesUrl);
+    final segs = u.pathSegments;
+    if (segs.length >= 2) {
+      return 'https://github.com/${segs[0]}/${segs[1]}/settings/secrets/actions';
+    }
+  } catch (_) {}
+  return 'https://github.com/settings/secrets/actions';
+}
+
 /// Route names for navigation.
 abstract class AppRoutes {
   static const String onboarding = '/onboarding';

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/agent_intent.dart';
@@ -307,6 +308,15 @@ class _StatusSection extends StatelessWidget {
 
   final Agent agent;
 
+  Future<void> _copy(BuildContext context, String label, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$label copied')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = agent.isRunning || agent.isPending
@@ -350,6 +360,30 @@ class _StatusSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(agent.summary!, style: Theme.of(context).textTheme.bodyMedium),
               ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.copy_rounded, size: 18),
+                    label: const Text('Copy agent ID'),
+                    onPressed: () => _copy(context, 'Agent ID', agent.id),
+                  ),
+                  if ((agent.repoUrl ?? '').trim().isNotEmpty)
+                    ActionChip(
+                      avatar: const Icon(Icons.link_rounded, size: 18),
+                      label: const Text('Copy repo URL'),
+                      onPressed: () => _copy(context, 'Repo URL', agent.repoUrl!.trim()),
+                    ),
+                  if ((agent.branchName ?? '').trim().isNotEmpty)
+                    ActionChip(
+                      avatar: const Icon(Icons.call_split_rounded, size: 18),
+                      label: const Text('Copy branch'),
+                      onPressed: () => _copy(context, 'Branch', agent.branchName!.trim()),
+                    ),
+                ],
+              ),
             ],
           ),
         ),

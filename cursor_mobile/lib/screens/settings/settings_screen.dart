@@ -11,6 +11,7 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/bridge_task_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/agents_provider.dart';
+import '../../../providers/entitlements_provider.dart';
 import '../../../services/mordecai_health_service.dart';
 import '../../../widgets/connectivity_diagnostics.dart';
 
@@ -217,11 +218,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
-  Future<void> _openHelp() async {
-    final uri = Uri.parse(apiKeyHelpUrl);
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
   Future<void> _openCursorConnectGithub() async {
     final uri = Uri.parse(cursorConnectGithubUrl);
     if (await canLaunchUrl(uri)) {
@@ -287,6 +283,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
     final notifPrefs = ref.watch(agentNotificationPreferencesProvider);
+    final pro = ref.watch(isProProvider);
+    final prefsAsync = ref.watch(preferencesProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -297,16 +295,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 8),
                 ListTile(
                   leading: const Icon(Icons.hub_rounded),
-                  title: const Text('Connect GitHub'),
-                  subtitle: const Text('Why repos may be missing + tips'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  title: const Text('Connect GitHub to Cursor'),
+                  subtitle: const Text('Why repos show up here · step-by-step'),
+                  trailing: IconButton(
+                    tooltip: 'Open Cursor (browser)',
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    onPressed: _openCursorConnectGithub,
+                  ),
                   onTap: _showConnectGithub,
                 ),
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'API keys & secrets (tap to open)',
+                    'Quick links',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -317,35 +319,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   url: apiKeyHelpUrl,
                 ),
                 const _LinkTile(
-                  icon: Icons.link_rounded,
-                  title: 'Connect GitHub to Cursor',
-                  url: cursorConnectGithubUrl,
-                ),
-                const _LinkTile(
                   icon: Icons.token_rounded,
                   title: 'GitHub tokens (PAT)',
                   url: githubTokensUrl,
                 ),
                 const _LinkTile(
                   icon: Icons.extension_rounded,
-                  title: 'GitHub connections',
+                  title: 'GitHub connected apps',
                   url: githubConnectionsUrl,
                 ),
-                const _LinkTile(
+                _LinkTile(
                   icon: Icons.security_rounded,
                   title: 'Repo secrets (Actions)',
-                  subtitle: 'For APK build',
-                  url: 'https://github.com/cesarcastanedo485-png/cursor/settings/secrets/actions',
+                  subtitle: 'CI / APK builds',
+                  url: githubDefaultActionsSecretsUrl,
                 ),
                 const _LinkTile(
                   icon: Icons.download_rounded,
-                  title: 'Download APK (Releases)',
+                  title: 'Download APK',
+                  subtitle: 'GitHub Releases',
                   url: githubReleasesUrl,
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Commissions (Mordecai URL)',
+                    'Mordecai server',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -354,10 +352,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: TextField(
                     controller: _mordecaiUrl,
                     decoration: const InputDecoration(
-                      labelText: 'Mordecai URL',
-                      hintText: 'https://xxxx.ngrok-free.app (or your tunnel URL)',
+                      labelText: 'Public URL',
+                      hintText: 'https://your-tunnel.trycloudflare.com',
                       helperText:
-                          'Use HTTPS for phone/WebView. localhost points to the phone itself.',
+                          'HTTPS only on phone. Dev: run_with_repo_env.ps1 fills this from repo .env.',
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
@@ -367,13 +365,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: FilledButton(
                     onPressed: _saveMordecaiUrl,
-                    child: const Text('Save Mordecai URL'),
+                    child: const Text('Save URL'),
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    'Bridge secret (optional)',
+                    'Bridge secret',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -383,8 +381,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     controller: _mordecaiBridgeSecret,
                     obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: 'Mordecai bridge secret',
-                      hintText: 'Matches MORDECAI_BRIDGE_SECRET on server',
+                      labelText: 'MORDECAI_BRIDGE_SECRET',
+                      hintText: 'Must match the Node server .env value',
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
@@ -480,11 +478,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   value: isDark,
                   onChanged: (v) => ref.read(themeModeProvider.notifier).setDark(v),
                 ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Text(
+                    'Mordechaius Pro',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
                 ListTile(
-                  leading: const Icon(Icons.help_outline_rounded),
-                  title: const Text('Get Cursor API key'),
-                  subtitle: const Text('Dashboard → Cloud Agents'),
-                  onTap: _openHelp,
+                  leading: const Icon(Icons.workspace_premium_outlined),
+                  title: const Text('Pro status'),
+                  subtitle: Text(
+                    pro
+                        ? 'Active — thank you!'
+                        : 'Unlock unlimited launch presets, OLED theme, and more when store SKUs are live.',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.restore_rounded),
+                  title: const Text('Restore purchases'),
+                  subtitle: const Text('After subscribing on this store account'),
+                  onTap: () async {
+                    await ref.read(billingServiceProvider).restorePurchases();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Restore complete. Pro unlocks when the billing backend is configured.')),
+                    );
+                  },
+                ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.contrast_rounded),
+                  title: const Text('OLED black (dark theme)'),
+                  subtitle: Text(
+                    pro
+                        ? 'Use true black surfaces when dark mode is on'
+                        : 'Requires Mordechaius Pro',
+                  ),
+                  value: pro && (prefsAsync.valueOrNull?.preferAmoledTheme ?? false),
+                  onChanged: pro
+                      ? (v) async {
+                          final p = await ref.read(preferencesProvider.future);
+                          await p.setPreferAmoledTheme(v);
+                          ref.invalidate(preferencesProvider);
+                        }
+                      : null,
                 ),
                 ListTile(
                   leading: const Icon(Icons.info_outline_rounded),

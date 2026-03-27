@@ -17,6 +17,13 @@ class CapabilityItem {
 
 enum CapabilityRisk { low, medium, high }
 
+/// IDs that use the Mordecai `/api/capabilities/smarthome` Home Assistant bridge.
+const Set<String> kSmartHomeCapabilityIds = {
+  'smarthome_lights',
+  'smarthome_thermostat',
+  'smarthome_alexa',
+};
+
 const List<CapabilityItem> kCapabilitiesCatalog = [
   CapabilityItem(
     id: 'sms',
@@ -97,13 +104,13 @@ const List<CapabilityItem> kCapabilitiesCatalog = [
   CapabilityItem(
     id: 'smarthome_lights',
     title: 'Smart lights',
-    summary: 'Control bulbs connected to Alexa or Home Assistant — on/off, dim, scenes.',
+    summary: 'Control bulbs via Home Assistant (on/off, dim) from your phone through Mordecai.',
     risk: CapabilityRisk.low,
     manualSteps: [
-      'Option A (easiest): Run the Mordechaius bridge script (see Instruction manual → Smart home bridge).',
-      'Option B: Voice Monkey + IFTTT — create Routine Trigger in voicemonkey.io, Alexa routine, IFTTT webhook applet.',
-      'Option C: Home Assistant — add your bulbs (Hue, Zigbee, etc.), create Long-Lived Token, point bridge at HA.',
-      'Configure → Webhook URL: your bridge address (e.g. http://YOUR_PC_IP:8765/webhook — run ipconfig for your IP) or IFTTT Maker URL.',
+      'Alexa-only bulbs (Echo as hub): Amazon does not give a simple HTTP API to your lights. Use one bridge: (A) Voice Monkey — create one “monkey” per action (on/off/dim) that triggers an Alexa routine controlling your room lights; copy each trigger URL into Mordecai .env as MORDECAI_ALEXA_LIGHTS_ON_URL, _OFF_, _DIM50_, _DIM100_. App → Configure → Webhook URL = https://YOUR_ORIGIN/api/capabilities/alexa-lights',
+      'Or (B) Home Assistant: add lights in HA, long-lived token + MORDECAI_HOME_ASSISTANT_* in .env, webhook path /api/capabilities/smarthome',
+      'Optional: set MORDECAI_SMARTHOME_WEBHOOK_SECRET on server and the same value in app Configure (API key field) so only your phone can trigger.',
+      'Restart Mordecai after .env changes. Tap Test, then Execute → Turn on lights.',
     ],
   ),
   CapabilityItem(

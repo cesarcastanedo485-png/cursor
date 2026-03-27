@@ -4,21 +4,123 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../../../core/constants.dart';
+import '../../../providers/bridge_task_provider.dart';
 import '../../../providers/preferences_provider.dart';
-import '../../../providers/shell_providers.dart';
 import '../../../services/mordecai_health_service.dart';
 
-/// Commissions tab: health check + WebView to Mordecai, or setup placeholder.
+Future<bool> _saveMordecaiUrlFromCommissionsTab(
+  BuildContext context,
+  WidgetRef ref,
+  String raw,
+) async {
+  final validation = MordecaiHealthService.validateForCommissions(
+    raw.trim(),
+    assumeMobileDevice: true,
+  );
+  if (!validation.isValid) {
+    if (!context.mounted) return false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(validation.error ?? 'Invalid Mordecai URL.')),
+    );
+    return false;
+  }
+  if (validation.hasWarning) {
+    final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Mordecai URL warning'),
+            content: Text(validation.warning!),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Save anyway'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!proceed) return false;
+  }
+
+  try {
+    final prefs = await ref.read(preferencesProvider.future);
+    await prefs.setMordecaiCommissionsUrl(validation.normalizedUrl);
+  } catch (e) {
+    if (!context.mounted) return false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not save Mordecai URL: $e')),
+    );
+    return false;
+  }
+
+  ref.invalidate(preferencesProvider);
+  ref.invalidate(bridgeTaskServiceProvider);
+  if (!context.mounted) return false;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Mordecai URL saved. Commissions will load it.'),
+    ),
+  );
+  return true;
+}
+
+Future<void> _showChangeMordecaiUrlDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  String initial = '';
+  try {
+    final prefs = await ref.read(preferencesProvider.future);
+    initial = prefs.mordecaiCommissionsUrl;
+  } catch (_) {}
+
+  if (!context.mounted) return;
+  final tc = TextEditingController(text: initial);
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Change Mordecai URL'),
+      content: TextField(
+        controller: tc,
+        decoration: const InputDecoration(
+          labelText: 'Public URL',
+          hintText: 'https://your-tunnel.trycloudflare.com',
+          helperText: 'HTTPS only on phone. Use your tunnel or public base URL.',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: TextInputType.url,
+        autocorrect: false,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final navigator = Navigator.of(ctx);
+            final saved = await _saveMordecaiUrlFromCommissionsTab(
+              context,
+              ref,
+              tc.text,
+            );
+            if (saved && navigator.canPop()) navigator.pop();
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+  tc.dispose();
+}
+
+/// Commissions tab: health check + WebView to Mordecai, or in-tab URL registration.
 class CommissionsScreen extends ConsumerWidget {
   const CommissionsScreen({super.key});
-
-  Future<void> _openUrl(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,28 +132,13 @@ class CommissionsScreen extends ConsumerWidget {
           return _CommissionsPanel(
             key: ValueKey<String>(url),
             rawUrl: url,
-            onOpenSettings: () {
-              ref.read(mainShellTabProvider.notifier).state = 0;
-              ref.read(cloudAgentsSubTabProvider.notifier).state = 3;
-            },
+            onChangeMordecaiUrl: () => _showChangeMordecaiUrlDialog(context, ref),
           );
         }
-        return _CommissionsPlaceholder(
-          onOpenReleases: () => _openUrl(context, githubReleasesUrl),
-          onOpenSettings: () {
-            ref.read(mainShellTabProvider.notifier).state = 0;
-            ref.read(cloudAgentsSubTabProvider.notifier).state = 3;
-          },
-        );
+        return const _CommissionsUrlRegistration();
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _CommissionsPlaceholder(
-        onOpenReleases: () => _openUrl(context, githubReleasesUrl),
-        onOpenSettings: () {
-          ref.read(mainShellTabProvider.notifier).state = 0;
-          ref.read(cloudAgentsSubTabProvider.notifier).state = 3;
-        },
-      ),
+      error: (e, _) => _CommissionsUrlRegistration(loadError: '$e'),
     );
   }
 }
@@ -63,11 +150,11 @@ class _CommissionsPanel extends StatefulWidget {
   const _CommissionsPanel({
     super.key,
     required this.rawUrl,
-    required this.onOpenSettings,
+    required this.onChangeMordecaiUrl,
   });
 
   final String rawUrl;
-  final VoidCallback onOpenSettings;
+  final VoidCallback onChangeMordecaiUrl;
 
   @override
   State<_CommissionsPanel> createState() => _CommissionsPanelState();
@@ -127,7 +214,7 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
       setState(() {
         _webLoading = false;
         _webError =
-            'Page took too long to load. Quick tunnels get a new URL when cloudflared restarts — copy the fresh trycloudflare link into Settings, confirm npm start is running, then retry.';
+            'Page took too long to load. Quick tunnels get a new URL when cloudflared restarts — paste the fresh trycloudflare link via Change Mordecai URL, confirm npm start is running, then retry.';
         _webErrorCategory = 'Load timeout';
         _webErrorUrl = _normalizedUrl;
       });
@@ -177,7 +264,7 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
     setState(() {
       _webLoading = false;
       _webError =
-          'The page loaded but Mordecai’s UI did not appear. Typical causes: tunnel or bot checks that block in-app WebViews, expired tunnel URL, or stale cached scripts. Try Open in browser; in the phone browser use “clear site data” for this host; then paste a fresh HTTPS tunnel URL in Settings.';
+          'The page loaded but Mordecai’s UI did not appear. Typical causes: tunnel or bot checks that block in-app WebViews, expired tunnel URL, or stale cached scripts. Try Open in browser; in the phone browser use “clear site data” for this host; then paste a fresh HTTPS tunnel URL (Change Mordecai URL).';
       _webErrorCategory = 'Blank or incomplete page';
       _webErrorUrl = _normalizedUrl;
     });
@@ -320,7 +407,7 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
     final d = description.toLowerCase();
     if (d.contains('cleartext') || d.contains('not permitted')) {
       return (
-        'Cleartext HTTP was blocked by mobile WebView. Use an HTTPS tunnel URL in Settings.',
+        'Cleartext HTTP was blocked by mobile WebView. Use an HTTPS tunnel URL.',
         'Cleartext blocked',
       );
     }
@@ -444,8 +531,8 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
                 child: const Text('Open in browser'),
               ),
               TextButton(
-                onPressed: widget.onOpenSettings,
-                child: const Text('Go to Settings'),
+                onPressed: widget.onChangeMordecaiUrl,
+                child: const Text('Change Mordecai URL'),
               ),
             ],
           ),
@@ -481,7 +568,7 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
                       Text(
                         skippedCheck
                             ? 'Opened without health check'
-                            : 'Installed and up and running',
+                            : 'Mordecai is reachable',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               color: bannerFg,
                               fontWeight: FontWeight.w600,
@@ -560,8 +647,8 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
                           child: const Text('Open in browser'),
                         ),
                         TextButton(
-                          onPressed: widget.onOpenSettings,
-                          child: const Text('Go to Settings'),
+                          onPressed: widget.onChangeMordecaiUrl,
+                          child: const Text('Change Mordecai URL'),
                         ),
                       ],
                     ),
@@ -574,57 +661,133 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
   }
 }
 
-class _CommissionsPlaceholder extends StatelessWidget {
-  const _CommissionsPlaceholder({
-    required this.onOpenReleases,
-    required this.onOpenSettings,
-  });
+class _CommissionsUrlRegistration extends ConsumerStatefulWidget {
+  const _CommissionsUrlRegistration({this.loadError});
 
-  final VoidCallback onOpenReleases;
-  final VoidCallback onOpenSettings;
+  /// When [preferencesProvider] failed, shows a short message; save still attempts after invalidate.
+  final String? loadError;
+
+  @override
+  ConsumerState<_CommissionsUrlRegistration> createState() =>
+      _CommissionsUrlRegistrationState();
+}
+
+class _CommissionsUrlRegistrationState extends ConsumerState<_CommissionsUrlRegistration> {
+  final _url = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.loadError == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          final prefs = await ref.read(preferencesProvider.future);
+          if (mounted) _url.text = prefs.mordecaiCommissionsUrl;
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Could not load saved URL. Enter it below.'),
+              ),
+            );
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _saveMordecaiUrlFromCommissionsTab(context, ref, _url.text);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.handyman_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Commissions',
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Set your Mordecai URL in Settings (Cloud Agents → Settings). '
-              'The app will verify the server, then open the phased commissions workflow.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final scheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.handyman_rounded, size: 64, color: scheme.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Commissions',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
                   ),
-              textAlign: TextAlign.center,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Enter your Mordecai public URL (same as Cloud Agents → Settings). '
+                    'The app will verify the server, then open the phased commissions workflow.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (widget.loadError != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Could not load saved settings. Enter your URL below or open Settings from another tab.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.error,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    SelectableText(
+                      widget.loadError!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _url,
+                    enabled: !_saving,
+                    decoration: const InputDecoration(
+                      labelText: 'Public URL',
+                      hintText: 'https://your-tunnel.trycloudflare.com',
+                      helperText:
+                          'HTTPS only on phone. Tunnel or host where `npm start` runs Mordecai.',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save URL'),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onOpenReleases,
-              icon: const Icon(Icons.download_rounded),
-              label: const Text('Download APK (Releases)'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onOpenSettings,
-              icon: const Icon(Icons.settings_rounded),
-              label: const Text('Go to Settings'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

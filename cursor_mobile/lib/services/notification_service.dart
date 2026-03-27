@@ -12,7 +12,9 @@ import '../core/constants.dart';
 import '../core/notification_type.dart';
 import '../data/local/secure_storage_service.dart';
 import '../firebase_options.dart';
+import '../providers/agents_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/bridge_task_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/preferences_provider.dart';
 import 'api_service.dart';
@@ -73,8 +75,18 @@ class NotificationService {
   /// Init after auth/onboarding. Call from _MainShellWithBottomNav.
   Future<void> init(WidgetRef ref) async {
     if (Firebase.apps.isEmpty) {
-      debugPrint('[Push] Skipping FCM init — Firebase did not initialize (offline/timeout/failure)');
-      return;
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        ).timeout(const Duration(seconds: 20));
+        debugPrint('[Push] Firebase initialized on retry (after startup timeout/offline)');
+      } on TimeoutException {
+        debugPrint('[Push] Deferred Firebase init timed out — push unavailable');
+        return;
+      } catch (e) {
+        debugPrint('[Push] Deferred Firebase init failed — push unavailable: $e');
+        return;
+      }
     }
     // CURSOR: next step — request permission first
     final messaging = FirebaseMessaging.instance;
@@ -133,11 +145,15 @@ class NotificationService {
       final storage = ref.read(secureStorageProvider);
       await storage.setFcmToken(token);
       debugPrint('[Push] FCM token: ${token.substring(0, 20)}...');
+      ref.invalidate(fcmTokenProvider);
+      ref.invalidate(agentStreamServiceProvider);
       await _syncTokenToBackend(ref, token);
     }
 
     messaging.onTokenRefresh.listen((newToken) async {
       await ref.read(secureStorageProvider).setFcmToken(newToken);
+      ref.invalidate(fcmTokenProvider);
+      ref.invalidate(agentStreamServiceProvider);
       await _syncTokenToBackend(ref, newToken);
     });
   }

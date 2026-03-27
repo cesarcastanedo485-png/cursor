@@ -7,6 +7,7 @@ import '../../../core/constants.dart';
 import '../../../providers/agents_provider.dart';
 import '../../../core/api_errors.dart';
 import '../../../providers/cache_provider.dart';
+import '../../../providers/home_agent_filter_provider.dart';
 import '../../../providers/shell_providers.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/grouped_agents_list.dart';
@@ -33,13 +34,23 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: agentsAsync.when(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _HomeFilterChips(),
+          Expanded(
+            child: agentsAsync.when(
               data: (agents) {
                 if (agents.isEmpty) {
                   return _empty(context, ref, cacheAsync, cacheTs);
                 }
+                final filter = ref.watch(homeAgentFilterProvider);
+                final filtered = filterAgentsForHome(agents, filter);
+                if (filtered.isEmpty) {
+                  return _emptyFilter(context, ref, filter);
+                }
                 return GroupedAgentsList(
-                  agents: agents,
+                  agents: filtered,
                   onRefresh: () async => ref.invalidate(agentsListProvider),
                   onAgentTap: (a) => Navigator.pushNamed(
                     context,
@@ -51,7 +62,48 @@ class HomeScreen extends ConsumerWidget {
               loading: () => _loadingOrCached(context, ref, cacheAsync, cacheTs),
               error: (e, _) => _errorOrCached(context, ref, e, cacheAsync, cacheTs),
             ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _emptyFilter(BuildContext context, WidgetRef ref, HomeAgentFilter filter) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.filter_alt_off_rounded, size: 48, color: Theme.of(context).colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(
+              'No agents match “${_filterLabel(filter)}”',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => ref.read(homeAgentFilterProvider.notifier).state = HomeAgentFilter.all,
+              child: const Text('Show all'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _filterLabel(HomeAgentFilter f) {
+    switch (f) {
+      case HomeAgentFilter.all:
+        return 'All';
+      case HomeAgentFilter.active:
+        return 'Active';
+      case HomeAgentFilter.finished:
+        return 'Finished';
+      case HomeAgentFilter.failed:
+        return 'Failed';
+    }
   }
 
   Widget _empty(BuildContext context, WidgetRef ref, AsyncValue<List<Agent>> cacheAsync, AsyncValue<DateTime?> cacheTs) {
@@ -79,7 +131,7 @@ class HomeScreen extends ConsumerWidget {
             ),
           );
         }
-        return _listFromCache(context, ref, list, cacheTs);
+        return _listFromCache(context, ref, list, cacheTs, offlineSnapshot: false);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => Center(
@@ -98,8 +150,34 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _listFromCache(BuildContext context, WidgetRef ref, List<Agent> cached, AsyncValue<DateTime?> cacheTs) {
+  Widget _listFromCache(
+    BuildContext context,
+    WidgetRef ref,
+    List<Agent> cached,
+    AsyncValue<DateTime?> cacheTs, {
+    bool offlineSnapshot = false,
+  }) {
+    final filter = ref.watch(homeAgentFilterProvider);
+    final filtered = filterAgentsForHome(cached, filter);
+    if (filtered.isEmpty && cached.isNotEmpty) {
+      return _emptyFilter(context, ref, filter);
+    }
     final leading = <Widget>[
+      if (offlineSnapshot)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Chip(
+              avatar: Icon(
+                Icons.cloud_off_outlined,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: const Text('Offline snapshot'),
+            ),
+          ),
+        ),
       if (cacheTs.value != null)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -110,7 +188,7 @@ class HomeScreen extends ConsumerWidget {
         ),
     ];
     return GroupedAgentsList(
-      agents: cached,
+      agents: filtered,
       onRefresh: () async => ref.invalidate(agentsListProvider),
       onAgentTap: (a) => Navigator.pushNamed(
         context,
@@ -138,7 +216,7 @@ class HomeScreen extends ConsumerWidget {
               padding: EdgeInsets.all(16),
               child: LinearProgressIndicator(),
             ),
-            Expanded(child: _listFromCache(context, ref, list, cacheTs)),
+            Expanded(child: _listFromCache(context, ref, list, cacheTs, offlineSnapshot: false)),
           ],
         );
       },
@@ -179,7 +257,7 @@ class HomeScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-              Expanded(child: _listFromCache(context, ref, list, cacheTs)),
+              Expanded(child: _listFromCache(context, ref, list, cacheTs, offlineSnapshot: true)),
             ],
           ],
         );
@@ -195,6 +273,41 @@ class HomeScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(agentsListProvider),
         onSecondary: openSettings,
         secondaryLabel: openSettings != null ? 'Open Settings' : null,
+      ),
+    );
+  }
+}
+
+class _HomeFilterChips extends ConsumerWidget {
+  const _HomeFilterChips();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = ref.watch(homeAgentFilterProvider);
+    Widget chip(HomeAgentFilter value, String label) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: FilterChip(
+          label: Text(label),
+          selected: f == value,
+          onSelected: (_) => ref.read(homeAgentFilterProvider.notifier).state = value,
+        ),
+      );
+    }
+
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            chip(HomeAgentFilter.all, 'All'),
+            chip(HomeAgentFilter.active, 'Active'),
+            chip(HomeAgentFilter.finished, 'Finished'),
+            chip(HomeAgentFilter.failed, 'Failed'),
+          ],
+        ),
       ),
     );
   }

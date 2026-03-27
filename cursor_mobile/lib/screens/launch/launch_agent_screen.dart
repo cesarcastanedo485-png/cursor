@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/agent_intent.dart';
 import '../../../core/constants.dart';
 import '../../../core/launch_routing_policy.dart';
+import '../../../data/models/launch_preset.dart';
 import '../../../data/models/launch_request.dart';
 import '../../../providers/agents_provider.dart';
 import '../../../providers/bridge_task_provider.dart';
+import '../../../providers/entitlements_provider.dart';
+import '../../../providers/launch_presets_provider.dart';
 import '../../../providers/preferences_provider.dart';
 import '../../../providers/shell_providers.dart';
 import '../../../services/bridge_task_service.dart';
@@ -99,6 +103,225 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     if (!await file.exists()) return null;
     final bytes = await file.readAsBytes();
     return base64Encode(bytes);
+  }
+
+  Future<void> _applyPreset(LaunchPreset p) async {
+    await ref.read(launchPresetsNotifierProvider.notifier).recordUsed(p.id);
+    if (!mounted) return;
+    setState(() {
+      _repoController.text = p.repoUrl;
+      _branchController.text = p.branch;
+      _promptController.text = p.prompt;
+      _intent = p.intent;
+      _model = p.model;
+      _autoCreatePr = p.autoCreatePr;
+      _useDesktop = p.useDesktop;
+    });
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _savePresetFromForm() async {
+    final maxAllowed = ref.read(maxLaunchPresetsProvider);
+    final nameCtrl = TextEditingController(text: 'My preset');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save launch preset'),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(labelText: 'Name'),
+          autofocus: true,
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, nameCtrl.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    nameCtrl.dispose();
+    if (name == null || name.isEmpty || !mounted) return;
+    final preset = LaunchPreset.create(
+      name: name,
+      repoUrl: _repoController.text.trim(),
+      branch: _branchController.text.trim(),
+      prompt: _promptController.text,
+      intent: _intent,
+      model: _model,
+      autoCreatePr: _autoCreatePr,
+      useDesktop: _useDesktop,
+    );
+    final ok =
+        await ref.read(launchPresetsNotifierProvider.notifier).addPreset(preset, maxAllowed: maxAllowed);
+    if (!mounted) return;
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preset saved.')),
+      );
+    } else {
+      final pro = ref.read(isProProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            pro
+                ? 'Could not save preset.'
+                : 'Free tier: up to $maxAllowed saved presets. Mordechaius Pro unlocks more.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _renamePreset(LaunchPreset preset) async {
+    final ctrl = TextEditingController(text: preset.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename preset'),
+        content: TextField(controller: ctrl, decoration: const InputDecoration(labelText: 'Name'), autofocus: true),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Save')),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (name == null || name.isEmpty || !mounted) return;
+    await ref.read(launchPresetsNotifierProvider.notifier).updatePreset(preset.copyWith(name: name));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preset updated.')));
+    }
+  }
+
+  Future<void> _deletePreset(LaunchPreset preset) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete preset?'),
+        content: Text('Remove “${preset.name}”?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+    await ref.read(launchPresetsNotifierProvider.notifier).removePreset(preset.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preset deleted.')));
+    }
+  }
+
+  void _openPresetsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.55,
+          minChildSize: 0.35,
+          maxChildSize: 0.9,
+          builder: (context, scroll) {
+            return Consumer(
+              builder: (context, ref, _) {
+                final async = ref.watch(launchPresetsNotifierProvider);
+                return async.when(
+                  loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+                  error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('$e'))),
+                  data: (list) {
+                    final sorted = sortedLaunchPresets(list);
+                    if (sorted.isEmpty) {
+                      return ListView(
+                        controller: scroll,
+                        padding: const EdgeInsets.all(24),
+                        children: [
+                          Text('No presets yet', style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Use “Save as preset” on the Launch screen to store this form.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      );
+                    }
+                    return ListView.builder(
+                      controller: scroll,
+                      padding: const EdgeInsets.only(bottom: 24),
+                      itemCount: sorted.length,
+                      itemBuilder: (context, i) {
+                        final p = sorted[i];
+                        return ListTile(
+                          title: Text(p.name),
+                          subtitle: Text(
+                            p.repoUrl,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Apply',
+                                icon: const Icon(Icons.play_arrow_rounded),
+                                onPressed: () => _applyPreset(p),
+                              ),
+                              PopupMenuButton<String>(
+                                onSelected: (action) async {
+                                  if (action == 'rename') await _renamePreset(p);
+                                  if (action == 'delete') await _deletePreset(p);
+                                },
+                                itemBuilder: (context) => const [
+                                  PopupMenuItem(value: 'rename', child: Text('Rename')),
+                                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                ],
+                              ),
+                            ],
+                          ),
+                          onTap: () => _applyPreset(p),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _importRepoFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (text.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Clipboard is empty')),
+        );
+      }
+      return;
+    }
+    final normalized = _normalizeRepoUrl(text);
+    if (normalized == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Clipboard does not look like a GitHub repo URL')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _repoController.text = normalized);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Repo URL imported from clipboard')),
+    );
   }
 
   String? _normalizeRepoUrl(String raw) {
@@ -253,6 +476,8 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
         _launchRouteNote ??= 'Cloud API path used.';
       });
       if (agentId != null && agentId.isNotEmpty) {
+        await registerMordecaiPushWatchForAgent(ref, agentId);
+        if (!mounted) return;
         Navigator.pushNamed(context, AppRoutes.agentDetail, arguments: agentId);
       }
     } catch (e) {
@@ -293,13 +518,35 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
     final showDesktopOption = mordecaiUrl.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Launch Agent')),
+      appBar: AppBar(
+        title: const Text('Launch Agent'),
+        actions: [
+          IconButton(
+            tooltip: 'Launch presets',
+            icon: const Icon(Icons.bookmarks_outlined),
+            onPressed: _openPresetsSheet,
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Repository URL', style: Theme.of(context).textTheme.titleSmall),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Repository URL',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _savePresetFromForm,
+                  child: const Text('Save as preset'),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _repoController,
@@ -307,6 +554,14 @@ class _LaunchAgentScreenState extends ConsumerState<LaunchAgentScreen> {
                 hintText: 'https://github.com/owner/repo',
               ),
               keyboardType: TextInputType.url,
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _importRepoFromClipboard,
+                icon: const Icon(Icons.content_paste_go_rounded, size: 20),
+                label: const Text('Paste GitHub URL from clipboard'),
+              ),
             ),
             const SizedBox(height: 8),
             Text('Branch / ref (optional)', style: Theme.of(context).textTheme.titleSmall),

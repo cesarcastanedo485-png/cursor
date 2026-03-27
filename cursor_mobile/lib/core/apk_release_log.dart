@@ -35,6 +35,18 @@ class ApkReleaseEntry {
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
     versionLabel: '2.0.9',
+    buildNumber: 25,
+    released: '2026-03-27',
+    changes: [
+      'Launch: saved presets (apply / rename / delete), paste GitHub URL from clipboard; free tier caps preset count, Pro unlocks more (billing stub + store scaffold).',
+      'Agents home: filter chips (All / Active / Finished / Failed), offline snapshot chip when showing cached list after errors.',
+      'Agent detail: one-tap copy for agent ID, repo URL, and branch.',
+      'Settings: Mordechaius Pro section (restore purchases), OLED black dark theme when Pro; optional StoreBillingService behind flag.',
+      'Deps: in_app_purchase for future Play/App Store SKUs.',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.9',
     buildNumber: 24,
     released: '2026-03-26',
     changes: [

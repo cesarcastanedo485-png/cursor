@@ -20,6 +20,7 @@ class PreferencesService {
   static const _notifFinished = 'notif_agent_finished';
   static const _notifExpired = 'notif_agent_expired';
   static const _notifAssistantMessage = 'notif_assistant_message';
+  static const _preferAmoledTheme = 'prefer_amoled_theme';
 
   bool get connectGithubHintSeen => _prefs.getBool(_connectGithubSeen) ?? false;
 
@@ -48,4 +49,9 @@ class PreferencesService {
   Future<void> setNotifAgentFinished(bool v) => _prefs.setBool(_notifFinished, v);
   Future<void> setNotifAgentExpired(bool v) => _prefs.setBool(_notifExpired, v);
   Future<void> setNotifAssistantMessage(bool v) => _prefs.setBool(_notifAssistantMessage, v);
+
+  /// Pro-only: true black surfaces in dark mode.
+  bool get preferAmoledTheme => _prefs.getBool(_preferAmoledTheme) ?? false;
+
+  Future<void> setPreferAmoledTheme(bool v) => _prefs.setBool(_preferAmoledTheme, v);
 }

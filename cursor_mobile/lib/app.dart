@@ -9,6 +9,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/agents_provider.dart';
+import 'providers/entitlements_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/preferences_provider.dart';
 import 'providers/shell_providers.dart';
@@ -18,6 +19,7 @@ import 'screens/cloud/cloud_agents_shell.dart';
 import 'screens/commissions/commissions_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/whats_new/whats_new_screen.dart';
+import 'services/mordecai_defaults_bootstrap.dart';
 import 'services/notification_service.dart';
 
 /// Global key for deep linking from push notifications.
@@ -31,6 +33,11 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final onboardingAsync = ref.watch(onboardingStateProvider);
+    final prefsAsync = ref.watch(preferencesProvider);
+    final pro = ref.watch(isProProvider);
+    final useAmoledDark = pro &&
+        (prefsAsync.valueOrNull?.preferAmoledTheme ?? false) &&
+        themeMode == ThemeMode.dark;
 
     NotificationService.setNavigatorKey(navigatorKey);
 
@@ -38,7 +45,7 @@ class App extends ConsumerWidget {
       navigatorKey: navigatorKey,
       title: AppStrings.appName,
       theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      darkTheme: useAmoledDark ? AppTheme.darkAmoled() : AppTheme.dark(),
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRouter.onGenerateRoute,
@@ -202,6 +209,7 @@ class _NotificationInitState extends ConsumerState<_NotificationInit> {
   Future<void> _init() async {
     if (_initDone || !mounted) return;
     _initDone = true;
+    await bootstrapMordecaiFromCompileDefaults(ref);
     final prefs = await ref.read(preferencesProvider.future);
     ref.read(agentNotificationPreferencesProvider.notifier).state =
         AgentNotificationPreferences(

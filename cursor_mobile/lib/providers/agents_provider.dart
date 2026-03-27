@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/agent.dart';
 import '../data/models/artifact.dart';
@@ -67,6 +68,43 @@ void invalidateAgentDataFromWidget(WidgetRef ref, String agentId) {
   ref.invalidate(conversationProvider(agentId));
   ref.invalidate(artifactsProvider(agentId));
   ref.invalidate(agentsListProvider);
+}
+
+/// Registers this device + agent watch with Mordecai using the latest FCM token from storage.
+/// Call after cloud launch so push works even if [agentStreamServiceProvider] was first built with a null token.
+Future<void> registerMordecaiPushWatchForAgent(WidgetRef ref, String agentId) async {
+  final id = agentId.trim();
+  if (id.isEmpty) return;
+  final prefsState = await ref.read(preferencesProvider.future);
+  final baseUrl = prefsState.mordecaiCommissionsUrl.trim();
+  if (baseUrl.isEmpty) {
+    debugPrint('[Push] Mordecai URL not set; skipped watch for agent $id');
+    return;
+  }
+  final storage = ref.read(
+    secureStorageProvider,
+  );
+  final bridgeSecret = await storage.getMordecaiBridgeSecret();
+  final token = await storage.getFcmToken();
+  if (token == null || token.trim().isEmpty) {
+    debugPrint(
+      '[Push] No FCM token (permission off or Firebase still starting); skipped watch for $id',
+    );
+    return;
+  }
+  final service = AgentStreamService(
+    mordecaiBaseUrl: baseUrl,
+    bridgeSecret: bridgeSecret,
+    fcmToken: token,
+  );
+  final notifPrefs = ref.read(agentNotificationPreferencesProvider);
+  try {
+    await service.registerDevice(notifPrefs);
+    await service.watchAgent(agentId: id, preferences: notifPrefs);
+  } catch (e, st) {
+    debugPrint('[Push] register-device / watch failed for $id: $e');
+    debugPrintStack(stackTrace: st);
+  }
 }
 
 final agentStreamConnectedProvider =
