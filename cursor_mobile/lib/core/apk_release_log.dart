@@ -35,6 +35,15 @@ class ApkReleaseEntry {
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
     versionLabel: '2.0.9',
+    buildNumber: 20,
+    released: '2026-03-26',
+    changes: [
+      'Release hygiene: pre-flight checks passed (Mordecai web UI shell loads locally, flutter analyze clean, Node bridge tests green).',
+      'CI: APK and Flutter workflows remain pinned to cursor_mobile/ in this monorepo so Drive upload and releases keep working from main.',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.9',
     buildNumber: 19,
     released: '2026-03-26',
     changes: [
