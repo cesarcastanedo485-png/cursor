@@ -7,7 +7,7 @@ import {
   completeTask,
   setTaskStatus,
   getTaskStats,
-} from "../lib/bridgeTasks.js";
+} from "../server_lib/bridgeTasks.js";
 
 test("createTask dedupes by idempotency key", () => {
   const first = createTask({

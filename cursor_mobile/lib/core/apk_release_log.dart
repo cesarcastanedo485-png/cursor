@@ -35,12 +35,23 @@ class ApkReleaseEntry {
 const List<ApkReleaseEntry> apkReleaseHistory = [
   ApkReleaseEntry(
     versionLabel: '2.0.9',
+    buildNumber: 23,
+    released: '2026-03-26',
+    changes: [
+      'Commissions WebView mounts only when you open the Commissions tab — expired tunnel URLs no longer spin up WebView on every app launch (Settings always reachable from Cloud Agents).',
+      'Mordecai web shell markers: data-mordecai-shell on <html>, application-name meta, richer in-app DOM probe.',
+      'Push token sync to Mordecai uses short HTTP timeouts so a dead tunnel cannot stall startup.',
+      'Monorepo: duplicate root Flutter tree removed; Node server code moved to server_lib/.',
+    ],
+  ),
+  ApkReleaseEntry(
+    versionLabel: '2.0.9',
     buildNumber: 22,
     released: '2026-03-26',
     changes: [
       'Commissions WebView: navigation epoch + second DOM probe pass to avoid race/false “blank” after redirects.',
       'Server: SPA fallback for extensionless paths; service worker install no longer aborts if precache fails.',
-      'Docs: README + lib/README warn that only cursor_mobile/ is the shipped Flutter app (root lib/ is stale).',
+      'Docs: README clarified that only cursor_mobile/ is the shipped Flutter app (duplicate root Flutter later removed in build 23).',
     ],
   ),
   ApkReleaseEntry(

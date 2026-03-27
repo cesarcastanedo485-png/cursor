@@ -1,9 +1,0 @@
-# Copy this file to key.properties (same folder) and fill in real values.
-# key.properties is gitignored — never commit passwords.
-#
-#   copy android\key.properties.example android\key.properties
-#
-storePassword=YOUR_STRONG_STORE_PASSWORD
-keyPassword=YOUR_STRONG_KEY_PASSWORD
-keyAlias=upload
-storeFile=upload-keystore.jks

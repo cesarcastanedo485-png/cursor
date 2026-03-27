@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -272,25 +273,41 @@ class NotificationService {
       '${baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl}/api/notifications/register-device',
     );
     final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 8);
     try {
-      final req = await client.postUrl(uri);
-      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-      final trimmed = secret?.trim() ?? '';
-      if (trimmed.isNotEmpty) {
-        req.headers.set('X-Bridge-Secret', trimmed);
-      }
-      req.write(jsonEncode({
-        'token': token,
-        'preferences': notifPrefs.toJson(),
-      }));
-      final res = await req.close();
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        debugPrint('[Push] Token sync failed (${res.statusCode})');
-      }
+      await _postRegisterDevice(client, uri, secret, token, notifPrefs).timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => throw TimeoutException('register-device'),
+      );
+    } on TimeoutException {
+      debugPrint('[Push] Token sync timed out (Mordecai URL may be down or tunnel expired)');
     } catch (e) {
       debugPrint('[Push] Token sync error: $e');
     } finally {
       client.close(force: true);
+    }
+  }
+
+  Future<void> _postRegisterDevice(
+    HttpClient client,
+    Uri uri,
+    String? secret,
+    String token,
+    AgentNotificationPreferences notifPrefs,
+  ) async {
+    final req = await client.postUrl(uri);
+    req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+    final trimmed = secret?.trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      req.headers.set('X-Bridge-Secret', trimmed);
+    }
+    req.write(jsonEncode({
+      'token': token,
+      'preferences': notifPrefs.toJson(),
+    }));
+    final res = await req.close();
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('[Push] Token sync failed (${res.statusCode})');
     }
   }
 

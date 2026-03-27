@@ -236,15 +236,16 @@ class _MainShellBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(mainShellTabProvider).clamp(0, 2);
+    // Build only the visible tab so a bad/expired Mordecai tunnel does not spin up
+    // the Commissions WebView until the user opens that tab (recovery path to Settings).
+    final body = switch (tab) {
+      0 => const CloudAgentsShell(),
+      1 => const CapabilitiesScreen(),
+      2 => const CommissionsScreen(),
+      _ => const CloudAgentsShell(),
+    };
     return Scaffold(
-      body: IndexedStack(
-        index: tab,
-        children: const [
-          CloudAgentsShell(),
-          CapabilitiesScreen(),
-          CommissionsScreen(),
-        ],
-      ),
+      body: body,
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
         onDestinationSelected: (i) => ref.read(mainShellTabProvider.notifier).state = i,

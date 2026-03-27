@@ -19,21 +19,21 @@ import {
   loadPlaybook,
   getPhaseInstructions,
   getWorkspaceForCommission,
-} from "./lib/commissionRunner.js";
+} from "./server_lib/commissionRunner.js";
 import {
   isConfigured as cursorAgentsConfigured,
   launchAgent,
   sendFollowup,
   getAgentStatus,
-} from "./lib/cursorAgents.js";
+} from "./server_lib/cursorAgents.js";
 import {
   attachSseClient,
   registerDeviceToken,
   updateDeviceTokenPrefs,
   getDeviceTokenPrefs,
   watchAgentForDevice,
-} from "./lib/agentEvents.js";
-import { getAgentConfigStatus, saveAgentConfig } from "./lib/agentConfig.js";
+} from "./server_lib/agentEvents.js";
+import { getAgentConfigStatus, saveAgentConfig } from "./server_lib/agentConfig.js";
 import {
   createTask,
   pollTask,
@@ -41,14 +41,14 @@ import {
   errorTask,
   setTaskStatus,
   getTaskStats,
-} from "./lib/bridgeTasks.js";
-import { discoverCommissionFolders } from "./lib/commissionDiscovery.js";
+} from "./server_lib/bridgeTasks.js";
+import { discoverCommissionFolders } from "./server_lib/commissionDiscovery.js";
 import {
   getRuntimeState,
   startTunnel,
   stopTunnel,
   getTunnelPublicUrl,
-} from "./lib/runtimeAutomation.js";
+} from "./server_lib/runtimeAutomation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });

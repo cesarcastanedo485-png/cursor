@@ -85,5 +85,5 @@ MORDECAI_PREFLIGHT_URL=http://127.0.0.1:3001 npm run commissions:preflight
 
 - Server: `server.js` — execute, `GET /api/commissions/agent-status/:id`, health.
 - UI: `public/js/mordecai.js` — polling, checklist, phases.
-- Workspace: `lib/commissionRunner.js` — `COMMISSIONS_WORKSPACE`.
+- Workspace: `server_lib/commissionRunner.js` — `COMMISSIONS_WORKSPACE`.
 - Agents: `lib/cursorAgents.js` — branch naming, followups.

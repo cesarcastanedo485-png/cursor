@@ -77,11 +77,18 @@ class _CommissionsPanelState extends State<_CommissionsPanel> {
   static const Duration _loadWatchdogDuration = Duration(seconds: 45);
   static const Duration _domProbeDelay = Duration(milliseconds: 650);
 
-  /// Confirms the Mordecai shell from [index.html] actually rendered (not an empty doc / interstitial).
+  /// Confirms the Mordecai shell rendered: stable markers even if headings copy changes.
   static const String _domProbeJs = r'''(function() {
   try {
-    var t = document.querySelector(".mordecai-title");
-    if (t) return 1;
+    var el = document.documentElement;
+    if (el && el.getAttribute("data-mordecai-shell") === "1") return 1;
+    var meta = document.querySelector('meta[name="application-name"]');
+    var ac = meta && meta.getAttribute("content");
+    if (ac && ac.indexOf("Mordecai") >= 0) return 1;
+    if (document.querySelector(".mordecai-title")) return 1;
+    if (document.getElementById("commissions-view")) return 1;
+    if (document.querySelector('script[src*="mordecai.js"]')) return 1;
+    if (document.body && document.body.classList.contains("mordecai-page")) return 1;
     var b = document.body;
     if (!b) return 0;
     var text = (b.innerText || "").trim();

@@ -80,7 +80,7 @@ Keep these consistent every release:
 
 - Same package ID: `com.mordechaius.maximus`
 - Same upload keystore signing cert
-- Increasing version/build in `pubspec.yaml`
+- Increasing version/build in `cursor_mobile/pubspec.yaml` (there is no Flutter `pubspec` at repo root)
 
 CI is now configured to fail instead of producing a debug-signed "release" when signing is missing.
 

@@ -101,4 +101,6 @@ The **phone Flutter app** (`cursor_mobile`) does not require a specific drive le
 
 ### Important: one Flutter app tree only
 
-GitHub Actions and Drive releases build from **`cursor_mobile/`** only. There is also a **duplicate** `pubspec.yaml` + `lib/` (and matching `android/` / `ios/`) at the **repo root** that is **not** what CI ships — it is easy to run by mistake and will **not** include the latest Commissions/WebView fixes. See [`lib/README.md`](lib/README.md). **Always open and run `cursor_mobile` for the phone app.**
+GitHub Actions and Drive releases build from **`cursor_mobile/`** only. **Do not run `flutter` from the repo root** — the duplicate top-level Flutter project (`pubspec.yaml`, `android/`, `ios/`, etc.) has been **removed** so you cannot accidentally build the wrong tree. The Node/Mordecai server modules live in **`server_lib/`** (not Flutter).
+
+**Recovery if Commissions breaks:** the app now loads **Cloud Agents first** and only mounts the Commissions WebView when you open that tab — so an expired tunnel URL will **not** block the rest of the app; go **Cloud Agents → Settings** and update the Mordecai URL.
