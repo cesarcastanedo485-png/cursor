@@ -108,6 +108,10 @@ export interface BridgeTask {
   repoUrl: string;
   branch?: string;
   intent?: string;
+  taskType?: string;
+  payload?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
+  priority?: number;
 }
 
 export interface TaskItem {

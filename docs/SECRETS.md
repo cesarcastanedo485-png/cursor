@@ -17,6 +17,13 @@ If `key.properties` is missing, release builds fall back to the **debug** keysto
 
 The Python bridge (`scripts/smarthome_bridge.py`) and optional email/Drive flows use env vars (e.g. `HA_URL`, `EMAIL_SMTP_HOST`, `RCLONE_CMD`). Document them in `scripts/CAPABILITIES_BRIDGE.md`; keep real values in your shell profile or a local `.env` that is **not** committed (`.env` is gitignored).
 
+For Phase 1 automation, treat these as secrets too:
+
+- `MORDECAI_BRIDGE_SECRET` (desktop bridge/task auth)
+- `MORDECAI_PHASE1_INGEST_TOKEN` (recommended dedicated auth for `/api/phase1/events`)
+- Platform access tokens used by your webhook ingest workers (Meta/TikTok/YouTube)
+- Connector envs (as used): `MORDECAI_META_PAGE_ACCESS_TOKEN`, `MORDECAI_YOUTUBE_ACCESS_TOKEN`
+
 ## Cursor Cloud Agents API key
 
 Stored on-device with **flutter_secure_storage**. It is never written to the repo.
@@ -25,6 +32,7 @@ Stored on-device with **flutter_secure_storage**. It is never written to the rep
 
 - [ ] Play/App Store: keystore passwords rotated from any dev placeholder
 - [ ] Revoke and re-issue any leaked SMTP or cloud tokens
+- [ ] Rotate bridge + Phase 1 ingest secrets after any exposure
 - [ ] Re-scan repo: `git grep -i password` / secret scanning before pushing
 
 ## Google Drive upload auth (GitHub Actions)

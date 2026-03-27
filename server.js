@@ -42,6 +42,12 @@ import {
   setTaskStatus,
   getTaskStats,
 } from "./server_lib/bridgeTasks.js";
+import { createPhase1AutomationRuntime } from "./server_lib/phase1Automation.js";
+import { dispatchAutoReply } from "./server_lib/socialReplyDispatch.js";
+import {
+  PHASE1_TASK_TYPES,
+  validatePhase1TaskType,
+} from "./server_lib/phase1Contracts.js";
 import { discoverCommissionFolders } from "./server_lib/commissionDiscovery.js";
 import {
   getRuntimeState,
@@ -49,6 +55,8 @@ import {
   stopTunnel,
   getTunnelPublicUrl,
 } from "./server_lib/runtimeAutomation.js";
+import { smarthomeHaWebhookHandler } from "./server_lib/smarthomeHaWebhook.js";
+import { alexaLightsWebhookHandler } from "./server_lib/alexaLightsWebhook.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -60,6 +68,7 @@ const IS_PRODUCTION = NODE_ENV === "production";
 const BRIDGE_SECRET = String(process.env.MORDECAI_BRIDGE_SECRET || "").trim();
 const ADMIN_TOKEN = String(process.env.MORDECAI_ADMIN_TOKEN || "").trim();
 const FCM_WEBHOOK_SECRET = String(process.env.MORDECAI_FCM_WEBHOOK_SECRET || "").trim();
+const PHASE1_INGEST_TOKEN = String(process.env.MORDECAI_PHASE1_INGEST_TOKEN || "").trim();
 const CORS_ALLOW_ORIGINS = String(process.env.CORS_ALLOW_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
@@ -103,7 +112,7 @@ function corsMiddleware(req, res, next) {
     res.setHeader("Vary", "Origin");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, X-Bridge-Secret, X-Admin-Token, X-Mordecai-Request-Id, X-Fcm-Webhook-Secret, X-Notification-Preferences"
+      "Content-Type, X-Bridge-Secret, X-Admin-Token, X-Mordecai-Request-Id, X-Fcm-Webhook-Secret, X-Notification-Preferences, X-Phase1-Ingest-Token"
     );
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     if (req.method === "OPTIONS") return res.status(204).send("");
@@ -195,6 +204,25 @@ function requireAdminToken(req, res) {
   }
   return true;
 }
+
+function requirePhase1IngestAuth(req, res) {
+  if (PHASE1_INGEST_TOKEN) {
+    const token = String(req.headers["x-phase1-ingest-token"] || "").trim();
+    if (token !== PHASE1_INGEST_TOKEN) {
+      res.status(401).json({ error: "Unauthorized" });
+      return false;
+    }
+    return true;
+  }
+  return requireBridgeSecret(req, res);
+}
+
+const phase1Automation = createPhase1AutomationRuntime({
+  createBridgeTask: (taskInput) => createTask(taskInput),
+  getBridgeStats: () => getTaskStats(),
+  logEvent,
+  dispatchReply: dispatchAutoReply,
+});
 
 async function sendFcmEvent({
   token,
@@ -475,6 +503,24 @@ app.get("/api/commissions/agent-status/:agentId", async (req, res) => {
   }
 });
 
+// Capabilities: smart home → Home Assistant (see MORDECAI_HOME_ASSISTANT_* in .env)
+app.post("/api/capabilities/smarthome", sensitiveLimiter, express.json(), async (req, res) => {
+  try {
+    await smarthomeHaWebhookHandler(req, res);
+  } catch (err) {
+    res.status(500).json({ error: err.message || "smarthome handler failed" });
+  }
+});
+
+// Capabilities: Alexa-only lights → Voice Monkey / IFTTT trigger URLs (see MORDECAI_ALEXA_LIGHTS_*_URL)
+app.post("/api/capabilities/alexa-lights", sensitiveLimiter, express.json(), async (req, res) => {
+  try {
+    await alexaLightsWebhookHandler(req, res);
+  } catch (err) {
+    res.status(500).json({ error: err.message || "alexa-lights handler failed" });
+  }
+});
+
 // Agent realtime watch lease for push fallback.
 app.post("/api/agents/watch", sensitiveLimiter, express.json(), async (req, res) => {
   try {
@@ -610,13 +656,118 @@ app.post("/api/commissions/delete-workspace", sensitiveLimiter, express.json(), 
   }
 });
 
+// Phase 1 automation orchestration: social ingest + run state.
+app.post("/api/phase1/events", sensitiveLimiter, express.json(), async (req, res) => {
+  if (!requirePhase1IngestAuth(req, res)) return;
+  try {
+    const result = await phase1Automation.ingestEvent(req.body || {}, {
+      requestId: req.mordecaiRequestId,
+    });
+    if (!result.ok) {
+      return res.status(400).json({ ok: false, error: result.error || "invalid_event" });
+    }
+    return res.json({
+      ok: true,
+      deduped: !!result.deduped,
+      eventId: result.eventId,
+      run: result.run,
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message || "phase1 ingest failed" });
+  }
+});
+
+app.get("/api/phase1/status", sensitiveLimiter, (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  res.json({ ok: true, status: phase1Automation.getStatus() });
+});
+
+app.get("/api/phase1/runs", sensitiveLimiter, (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  const limit = Number(req.query.limit || 25);
+  res.json({ ok: true, runs: phase1Automation.listRuns(limit) });
+});
+
+app.get("/api/phase1/dead-letter", sensitiveLimiter, (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  const limit = Number(req.query.limit || 25);
+  res.json({ ok: true, deadLetters: phase1Automation.listDeadLetters(limit) });
+});
+
+app.post("/api/phase1/dead-letter/:eventId/retry", sensitiveLimiter, express.json(), async (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  try {
+    const retried = await phase1Automation.retryDeadLetter(req.params.eventId, {
+      requestId: req.mordecaiRequestId,
+    });
+    if (!retried.ok) {
+      return res.status(404).json({ ok: false, error: retried.error || "retry_failed" });
+    }
+    return res.json({ ok: true, eventId: retried.eventId, run: retried.run });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message || "retry failed" });
+  }
+});
+
+app.get("/api/phase1/config", sensitiveLimiter, (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  res.json({ ok: true, config: phase1Automation.getConfig() });
+});
+
+app.post("/api/phase1/config", sensitiveLimiter, express.json(), (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  const next = phase1Automation.updateConfig(req.body || {});
+  res.json({ ok: true, config: next });
+});
+
+// Forward-compatible hooks for YouTube + vidIQ desktop bridge flows.
+app.post("/api/phase1/youtube/optimize", sensitiveLimiter, express.json(), (req, res) => {
+  if (!requireBridgeSecret(req, res)) return;
+  const payload = req.body && typeof req.body === "object" ? req.body : {};
+  const taskType = payload.taskType === "vidiq_assist" ? "vidiq_assist" : "youtube_optimize";
+  const created = createTask({
+    prompt:
+      payload.prompt ||
+      (taskType === "vidiq_assist"
+        ? "Run vidIQ optimization flow via desktop bridge."
+        : "Run YouTube channel optimization flow via desktop bridge."),
+    repoUrl: "",
+    branch: "",
+    intent: "phase2_youtube",
+    idempotencyKey: payload.idempotencyKey || null,
+    taskType,
+    payload,
+    metadata: {
+      source: "phase1_api_hook",
+      category: "youtube_optimization",
+    },
+  });
+  res.json({ ok: true, taskId: created.taskId, status: created.status, deduped: !!created.deduped });
+});
+
 // Desktop bridge task queue — phone submits, desktop polls and completes
 app.post("/api/bridge/tasks", sensitiveLimiter, express.json(), (req, res) => {
   if (!requireBridgeSecret(req, res)) return;
-  const { prompt, repoUrl, branch, intent, fcmToken, idempotencyKey } = req.body || {};
+  const {
+    prompt,
+    repoUrl,
+    branch,
+    intent,
+    fcmToken,
+    idempotencyKey,
+    taskType,
+    payload,
+    metadata,
+    priority,
+  } = req.body || {};
   launchRoutingMetrics.bridgeAttempted += 1;
   if (!prompt || typeof prompt !== "string") {
     return res.status(400).json({ error: "prompt required" });
+  }
+  if (taskType && !validatePhase1TaskType(taskType) && taskType !== "agent_prompt") {
+    return res.status(400).json({
+      error: `Unsupported taskType. Allowed: agent_prompt, ${[...PHASE1_TASK_TYPES].join(", ")}`,
+    });
   }
   const created = createTask({
     prompt: prompt.trim(),
@@ -625,6 +776,10 @@ app.post("/api/bridge/tasks", sensitiveLimiter, express.json(), (req, res) => {
     intent: intent || "normal",
     fcmToken: fcmToken || null,
     idempotencyKey: idempotencyKey || null,
+    taskType: taskType || "agent_prompt",
+    payload: payload && typeof payload === "object" ? payload : null,
+    metadata: metadata && typeof metadata === "object" ? metadata : null,
+    priority: priority,
   });
   if (created.deduped) {
     launchRoutingMetrics.bridgeDeduped += 1;

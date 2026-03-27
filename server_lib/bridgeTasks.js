@@ -50,6 +50,10 @@ export function createTask({
   intent,
   fcmToken,
   idempotencyKey,
+  taskType,
+  payload,
+  metadata,
+  priority,
 }) {
   cleanupOldTasks();
   const key = String(idempotencyKey || "").trim();
@@ -69,6 +73,10 @@ export function createTask({
     repoUrl: repoUrl || "",
     branch: branch || "",
     intent: intent || "normal",
+    taskType: String(taskType || "").trim() || "agent_prompt",
+    payload: payload && typeof payload === "object" ? payload : null,
+    metadata: metadata && typeof metadata === "object" ? metadata : null,
+    priority: Number.isFinite(Number(priority)) ? Number(priority) : 50,
     fcmToken: fcmToken || null,
     status: "pending",
     deviceId: null,

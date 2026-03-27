@@ -23,6 +23,37 @@ export class MordecaiTasksProvider implements vscode.TreeDataProvider<TaskItem> 
     this.context = context;
   }
 
+  private isAutomationTask(task: BridgeTask): boolean {
+    const type = String(task.taskType || '').trim().toLowerCase();
+    return (
+      type === 'phase1_obs_control' ||
+      type === 'phase1_clip_pipeline' ||
+      type === 'phase1_clip_publish' ||
+      type === 'youtube_optimize' ||
+      type === 'vidiq_assist'
+    );
+  }
+
+  private buildTaskPrompt(task: BridgeTask): string {
+    if (!this.isAutomationTask(task)) return task.prompt;
+    const type = String(task.taskType || 'phase1_clip_pipeline').toLowerCase();
+    const payload = task.payload && typeof task.payload === 'object' ? task.payload : {};
+    const payloadText = JSON.stringify(payload, null, 2);
+    const headers: Record<string, string> = {
+      phase1_obs_control: 'Execute OBS desktop control actions from this payload.',
+      phase1_clip_pipeline: 'Execute clip pipeline: collect recording, process clip, upload, and report outcome.',
+      phase1_clip_publish: 'Publish prepared clip to target platform and report result.',
+      youtube_optimize: 'Run YouTube optimization workflow on desktop tooling.',
+      vidiq_assist: 'Open vidIQ flow on desktop and apply optimization recommendations.',
+    };
+    return (
+      `${headers[type] || 'Execute automation task from payload.'}\n\n` +
+      `Task type: ${type}\n` +
+      `Task id: ${task.taskId}\n\n` +
+      `Payload:\n${payloadText}`
+    );
+  }
+
   private getBridgeSecret(): string {
     return vscode.workspace.getConfiguration('mordecai').get<string>('bridgeSecret', '')?.trim() || '';
   }
@@ -95,9 +126,12 @@ export class MordecaiTasksProvider implements vscode.TreeDataProvider<TaskItem> 
       const task = (await res.json()) as BridgeTask;
       this.currentTask = task;
       this._onDidChangeTreeData.fire();
-      vscode.env.clipboard.writeText(task.prompt);
+      const prompt = this.buildTaskPrompt(task);
+      vscode.env.clipboard.writeText(prompt);
       vscode.window.showInformationMessage(
-        `Mordecai: New task from phone. Prompt copied. Paste in Composer (Ctrl+Shift+I) to run.`,
+        this.isAutomationTask(task)
+          ? `Mordecai: Automation task received. Instructions copied. Paste in Composer (Ctrl+Shift+I) to run.`
+          : `Mordecai: New task from phone. Prompt copied. Paste in Composer (Ctrl+Shift+I) to run.`,
       );
     } catch {
       // Ignore poll errors (network, etc.)
@@ -154,7 +188,8 @@ export class MordecaiTasksProvider implements vscode.TreeDataProvider<TaskItem> 
     );
     if (element.task) {
       item.contextValue = 'task';
-      item.tooltip = element.task.prompt.slice(0, 200) + (element.task.prompt.length > 200 ? '...' : '');
+      const prompt = this.buildTaskPrompt(element.task);
+      item.tooltip = prompt.slice(0, 200) + (prompt.length > 200 ? '...' : '');
       item.command = {
         command: 'mordecai.copyPrompt',
         title: 'Copy',
@@ -168,10 +203,12 @@ export class MordecaiTasksProvider implements vscode.TreeDataProvider<TaskItem> 
 
   getChildren(): TaskItem[] {
     if (this.currentTask) {
+      const type = String(this.currentTask.taskType || '').trim();
+      const prefix = type ? `[${type}] ` : '';
       return [
         {
           task: this.currentTask,
-          label: `${this.currentTask.repoUrl.split('/').pop() || 'Task'} — ${this.currentTask.prompt.slice(0, 50)}...`,
+          label: `${prefix}${this.currentTask.repoUrl.split('/').pop() || 'Task'} — ${this.currentTask.prompt.slice(0, 50)}...`,
         },
       ];
     }
