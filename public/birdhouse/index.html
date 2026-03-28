@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-mordecai-shell="1">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="application-name" content="Mordecai's Maximus" />
+    <title id="page-title">Birdhouse viewer</title>
+    <meta name="theme-color" content="#0d1117" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0d1117;
+        color: #e6edf3;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        touch-action: manipulation;
+      }
+      body.mordecai-page {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+      }
+      .bh-header {
+        flex-shrink: 0;
+        padding: 10px 14px 6px;
+        border-bottom: 1px solid #30363d;
+      }
+      .bh-header h1 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+      }
+      .bh-sub {
+        margin: 4px 0 0;
+        font-size: 0.78rem;
+        color: #8b949e;
+        line-height: 1.35;
+      }
+      .bh-toolbar {
+        flex-shrink: 0;
+        display: flex;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid #30363d;
+        background: #161b22;
+      }
+      .bh-toolbar button {
+        flex: 1;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border: 1px solid #388bfd;
+        border-radius: 8px;
+        background: #21262d;
+        color: #58a6ff;
+        cursor: pointer;
+        min-height: 48px;
+      }
+      .bh-toolbar button:active {
+        background: #30363d;
+      }
+      .bh-toolbar button.primary {
+        background: #238636;
+        border-color: #3fb950;
+        color: #fff;
+      }
+      .bh-wrap {
+        flex: 1;
+        position: relative;
+        min-height: 200px;
+      }
+      #c {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+      .bh-status {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        font-size: 0.72rem;
+        color: #8b949e;
+        pointer-events: none;
+        text-shadow: 0 1px 2px #000;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body class="mordecai-page">
+    <header class="bh-header">
+      <h1 class="mordecai-title" id="viewer-title">Birdhouse</h1>
+      <p class="bh-sub">
+        Drag to orbit · pinch zoom · <strong>Explode</strong> / <strong>Assemble</strong> below. Replace STLs in
+        <code>public/birdhouse/stl/</code> and edit <code>manifest.json</code> (your E: drive files are not visible from this
+        server — copy them into that folder).
+      </p>
+    </header>
+    <div class="bh-toolbar">
+      <button type="button" id="btn-assemble" class="primary">Assemble</button>
+      <button type="button" id="btn-explode">Explode</button>
+    </div>
+    <div class="bh-wrap" id="commissions-view">
+      <canvas id="c" aria-label="3D birdhouse model"></canvas>
+      <div class="bh-status" id="status">Starting…</div>
+    </div>
+    <script type="module" src="./viewer.js?v=1"></script>
+  </body>
+</html>
